@@ -13,6 +13,9 @@ NAME = simplesynth
 # Files to build
 
 OBJS_DSP = \
+	ADSR.cpp.o \
+	WaveTableOsc.cpp.o \
+	WaveUtils.cpp.o \
 	PluginSimpleSynth.cpp.o
 
 # --------------------------------------------------------------
@@ -24,7 +27,8 @@ include ../Makefile.mk
 # Enable all possible plugin types
 
 ifeq ($(LINUX),true)
-TARGETS += dssi ladspa
+#TARGETS += dssi ladspa
+TARGETS += dssi
 endif
 
 TARGETS += lv2_dsp

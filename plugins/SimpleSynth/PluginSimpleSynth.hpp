@@ -19,6 +19,8 @@
 #define PLUGIN_SIMPLESYNTH_H
 
 #include "DistrhoPlugin.hpp"
+#include "ADSR.hpp"
+#include "WaveUtils.hpp"
 
 START_NAMESPACE_DISTRHO
 
@@ -33,6 +35,7 @@ public:
 
     PluginSimpleSynth();
 
+    ~PluginSimpleSynth();
 protected:
     // -------------------------------------------------------------------
     // Information
@@ -67,7 +70,7 @@ protected:
     //
     // Get a proper plugin UID and fill it in here!
     int64_t getUniqueId() const noexcept override {
-        return d_cconst('a', 'b', 'c', 'd');
+        return d_cconst('s', '5', 'y', 'n');
     }
 
     // -------------------------------------------------------------------
@@ -93,13 +96,17 @@ protected:
     // Process
 
     void activate() override;
-    void run(const float**, float** outputs, uint32_t frames) override;
+    void run(const float**, float** outputs, uint32_t frames,
+             const MidiEvent *midiEvents, uint32_t midiEventCount) override;
 
     // -------------------------------------------------------------------
 
 private:
     float    fParams[paramCount];
     double   fSampleRate;
+    ADSR     *env;
+    WaveTableOsc *osc;
+    bool noteState[128];
 
     DISTRHO_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PluginSimpleSynth)
 };

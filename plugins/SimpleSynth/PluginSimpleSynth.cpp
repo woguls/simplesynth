@@ -27,7 +27,14 @@ PluginSimpleSynth::PluginSimpleSynth()
     : Plugin(paramCount, 1, 0)  // paramCount params, 1 program(s), 0 states
 {
     sampleRateChanged(getSampleRate());
+    osc = sawOsc();
+    env = new ADSR();
     loadProgram(0);
+}
+
+PluginSimpleSynth::~PluginSimpleSynth() {
+    delete env;
+    delete osc;
 }
 
 // -----------------------------------------------------------------------
@@ -87,7 +94,7 @@ void PluginSimpleSynth::setParameterValue(uint32_t index, float value) {
 
     switch (index) {
         case paramVolume:
-            // do something when volume param is set
+            // nothing to do here...
             break;
     }
 }
@@ -100,7 +107,7 @@ void PluginSimpleSynth::setParameterValue(uint32_t index, float value) {
 void PluginSimpleSynth::loadProgram(uint32_t index) {
     switch (index) {
         case 0:
-            setParameterValue(paramVolume, 0.1f);
+            setParameterValue(paramVolume, 0.6f);
             break;
     }
 }
@@ -109,25 +116,81 @@ void PluginSimpleSynth::loadProgram(uint32_t index) {
 // Process
 
 void PluginSimpleSynth::activate() {
-    // plugin is activated
+    double fSampleRate = getSampleRate();
+    osc->setFrequency(440.0f / fSampleRate);
+
+    env->setAttackRate(0.1f * fSampleRate);
+    env->setDecayRate(0.3f * fSampleRate);
+    env->setReleaseRate(2.0f * fSampleRate);
+    env->setSustainLevel(0.8f);
+
+    for (int i=0; i < 128; i++) {
+        noteState[i] = false;
+    }
 }
 
-void PluginSimpleSynth::run(const float** inputs, float** outputs,
-                                  uint32_t frames) {
-    // get the left and right audio inputs
-    const float* const inpL = inputs[0];
-    const float* const inpR = inputs[1];
-
+void PluginSimpleSynth::run(const float**, float** outputs, uint32_t frames,
+                            const MidiEvent *midiEvents, uint32_t midiEventCount) {
     // get the left and right audio outputs
     float* const outL = outputs[0];
     float* const outR = outputs[1];
 
-    float vol = fParams[paramVolume];
+    uint8_t note, velo;
+    float freq, vol = fParams[paramVolume];
 
-    // apply gain against all samples
-    for (uint32_t i=0; i < frames; ++i) {
-        outL[i] = inpL[i] * vol;
-        outR[i] = inpR[i] * vol;
+    for (uint32_t count, pos=0, curEventIndex=0; pos<frames;) {
+        for (;curEventIndex < midiEventCount && pos >= midiEvents[curEventIndex].frame; ++curEventIndex) {
+            if (midiEvents[curEventIndex].size > MidiEvent::kDataSize)
+                continue;
+
+            const uint8_t* data = midiEvents[curEventIndex].data;
+            const uint8_t status = data[0] & 0xF0;
+
+            switch (status) {
+                case 0x90:
+                    note = data[1];
+                    velo = data[2];
+                    DISTRHO_SAFE_ASSERT_BREAK(note < 128);
+
+                    if (noteState[note]) {
+                        if (velo == 0) {
+                            noteState[note] = false;
+                            env->gate(false);
+                        }
+                    }
+                    else if (velo > 0) {
+                        freq = 440.0f * powf(2.0f, (note - 69.0f) / 12.0f);
+                        osc->setFrequency(freq / fSampleRate);
+                        noteState[note] = true;
+                        env->gate(true);
+                        break;
+                    }
+                    break;
+                case 0x80:
+                    note = data[1];
+                    DISTRHO_SAFE_ASSERT_BREAK(note < 128);
+
+                    if (noteState[note]) {
+                        noteState[note] = false;
+                        env->gate(false);
+                    }
+                    break;
+            }
+        }
+
+        if (curEventIndex < midiEventCount && midiEvents[curEventIndex].frame < frames)
+            count = midiEvents[curEventIndex].frame - pos;
+        else
+            count = frames - pos;
+
+        for (uint32_t i=0; i<count; ++i) {
+            float sample = osc->getOutput() * env->process() * vol;
+            outL[pos + i] = sample;
+            outR[pos + i] = sample;
+            osc->updatePhase();
+        }
+
+        pos += count;
     }
 }
 
