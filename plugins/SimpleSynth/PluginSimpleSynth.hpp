@@ -57,7 +57,7 @@ protected:
     }
 
     const char* getLicense() const noexcept override {
-        return "MIT";
+        return "GPL";
     }
 
     uint32_t getVersion() const noexcept override {
