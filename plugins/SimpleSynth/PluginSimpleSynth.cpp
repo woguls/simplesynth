@@ -129,30 +129,140 @@ void PluginSimpleSynth::activate() {
     }
 }
 
+
+/**
+   Handy class to help keep audio buffer in sync with incoming MIDI events.
+   To use it, create a local variable (on the stack) and call nextEvent() until it returns false.
+   @code
+    for (AudioMidiSyncHelper amsh(outputs, frames, midiEvents, midiEventCount); amsh.nextEvent();)
+    {
+        float* const outL = amsh.outputs[0];
+        float* const outR = amsh.outputs[1];
+
+        for (uint32_t i=0; i<amsh.midiEventCount; ++i)
+        {
+            const MidiEvent& ev(amsh.midiEvents[i]);
+            // ... do something with the midi event
+        }
+
+        renderSynth(outL, outR, amsh.frames);
+    }
+   @endcode
+
+   Some important notes when using this class:
+    1. MidiEvent::frame retains its original value, but it is useless, do not use it.
+    2. The class variables names are the same as the parameter names of the run function.
+       Keep that in mind and try to avoid typos. :)
+ */
+class AudioMidiSyncHelper {
+public:
+    /** Parameters from the run function, adjusted for event sync */
+    float** outputs;
+    uint32_t frames;
+    const MidiEvent* midiEvents;
+    uint32_t midiEventCount;
+
+    /**
+       Constructor, using values from the run function.
+    */
+    AudioMidiSyncHelper(float** const o, uint32_t f, const MidiEvent* m, uint32_t mc)
+        : outputs(o),
+          frames(0),
+          midiEvents(m),
+          midiEventCount(0),
+          remainingFrames(f),
+          remainingMidiEventCount(mc) {}
+
+    /**
+       Process a batch of events untill no more are available.
+       You must not read any more values from this class after this function returns false.
+    */
+    bool nextEvent()
+    {
+        if (remainingMidiEventCount == 0)
+        {
+            if (remainingFrames == 0)
+                return false;
+
+            for (uint32_t i=0; i<DISTRHO_PLUGIN_NUM_OUTPUTS; ++i)
+                outputs[i] += frames;
+
+            if (midiEventCount != 0)
+                midiEvents += midiEventCount;
+
+            frames = remainingFrames;
+            midiEvents = nullptr;
+            midiEventCount = 0;
+            remainingFrames = 0;
+            return true;
+        }
+
+        const uint32_t eventFrame = midiEvents[0].frame;
+        DISTRHO_SAFE_ASSERT_RETURN(eventFrame < remainingFrames, false);
+
+        midiEventCount = 1;
+
+        for (uint32_t i=1; i<remainingMidiEventCount; ++i)
+        {
+            if (midiEvents[i].frame != eventFrame)
+            {
+                midiEventCount = i;
+                break;
+            }
+        }
+
+        frames = remainingFrames - eventFrame;
+        remainingFrames -= frames;
+        remainingMidiEventCount -= midiEventCount;
+        return true;
+    }
+
+private:
+    /** @internal */
+    uint32_t remainingFrames;
+    uint32_t remainingMidiEventCount;
+};
+
+
 void PluginSimpleSynth::run(const float**, float** outputs, uint32_t frames,
                             const MidiEvent *midiEvents, uint32_t midiEventCount) {
-    // get the left and right audio outputs
-    float* const outL = outputs[0];
-    float* const outR = outputs[1];
-
     uint8_t note, velo;
     float freq, vol = fParams[paramVolume];
 
-    for (uint32_t count, pos=0, curEventIndex=0; pos<frames;) {
-        for (;curEventIndex < midiEventCount && pos >= midiEvents[curEventIndex].frame; ++curEventIndex) {
-            if (midiEvents[curEventIndex].size > MidiEvent::kDataSize)
+    // Loop over MIDI events in this block in batches grouped by event frame number,
+    // i.e. each batch has a number of events occuring at the same frame number.
+    // First we need to make an instance of sync helper in the for-loop initializer.
+    // The for-loop break condition is amsh.nextEvent(), when it returns null,
+    // there are no more events and the loop ends.
+    //
+    // One could also use a while-loop like this:
+    //
+    // AudioMidiSyncHelper amsh(outputs, frames, midiEvents, midiEventCount);
+    //
+    // while (amsh.nextEvent()) {
+    //    ...
+    // }
+    for (AudioMidiSyncHelper amsh(outputs, frames, midiEvents, midiEventCount); amsh.nextEvent();) {
+        // Loop over events in this batch
+        for (uint32_t i=0; i<amsh.midiEventCount; ++i) {
+            if (amsh.midiEvents[i].size > MidiEvent::kDataSize)
+                // Skip MIDI events with more than 3 bytes.
                 continue;
 
-            const uint8_t* data = midiEvents[curEventIndex].data;
+            const uint8_t* data = amsh.midiEvents[i].data;
+            // Determine MIDI event status by masking out MIDI channel in lower four bits.
             const uint8_t status = data[0] & 0xF0;
 
             switch (status) {
                 case 0x90:
+                    // Note On
                     note = data[1];
                     velo = data[2];
+                    // Make sure note number is within range 0 .. 127
                     DISTRHO_SAFE_ASSERT_BREAK(note < 128);
 
                     if (noteState[note]) {
+                        // Note On with velocity 0 <=> Note Off
                         if (velo == 0) {
                             noteState[note] = false;
                             env->gate(false);
@@ -163,11 +273,11 @@ void PluginSimpleSynth::run(const float**, float** outputs, uint32_t frames,
                         osc->setFrequency(freq / fSampleRate);
                         noteState[note] = true;
                         env->gate(true);
-                        break;
                     }
                     break;
                 case 0x80:
                     note = data[1];
+                    // Make sure note number is within range 0 .. 127
                     DISTRHO_SAFE_ASSERT_BREAK(note < 128);
 
                     if (noteState[note]) {
@@ -178,19 +288,19 @@ void PluginSimpleSynth::run(const float**, float** outputs, uint32_t frames,
             }
         }
 
-        if (curEventIndex < midiEventCount && midiEvents[curEventIndex].frame < frames)
-            count = midiEvents[curEventIndex].frame - pos;
-        else
-            count = frames - pos;
+        // Get the left and right audio outputs from the AudioMidiSyncHelper.
+        // This ensures that the pointer is positioned at the right frame within
+        // the block for the current batch.
+        float* const outL = amsh.outputs[0];
+        float* const outR = amsh.outputs[1];
 
-        for (uint32_t i=0; i<count; ++i) {
+        // Write samples for the frames of the current batch
+        for (uint32_t i=0; i<amsh.frames; ++i) {
             float sample = osc->getOutput() * env->process() * vol;
-            outL[pos + i] = sample;
-            outR[pos + i] = sample;
+            outL[i] = sample;
+            outR[i] = sample;
             osc->updatePhase();
         }
-
-        pos += count;
     }
 }
 
