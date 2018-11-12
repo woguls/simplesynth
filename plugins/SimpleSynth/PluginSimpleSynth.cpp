@@ -126,7 +126,10 @@ void PluginSimpleSynth::activate() {
 
     for (int i=0; i < 128; i++) {
         noteState[i] = false;
+        noteStack[i] = -1;
     }
+
+    noteStackPos = -1;
 }
 
 
@@ -261,29 +264,49 @@ void PluginSimpleSynth::run(const float**, float** outputs, uint32_t frames,
                     // Make sure note number is within range 0 .. 127
                     DISTRHO_SAFE_ASSERT_BREAK(note < 128);
 
-                    if (noteState[note]) {
-                        // Note On with velocity 0 <=> Note Off
-                        if (velo == 0) {
-                            noteState[note] = false;
+                    if (velo > 0) {
+                        noteState[note] = true;
+
+                        if (noteStackPos >= 0 && note == noteStack[noteStackPos])
+                            break;
+
+                        if (noteStackPos == -1) {
+                            env->gate(true);
+                        }
+
+                        noteStack[++noteStackPos] = note;
+                        freq = 440.0f * powf(2.0f, (note - 69.0f) / 12.0f);
+                        osc->setFrequency(freq / fSampleRate);
+                        break;
+                    }
+                    // Fall-through for Note On with velocity 0 => Note Off
+                case 0x80:
+                    note = data[1];
+                    noteState[note] = false;
+
+                    // No note currently playing
+                    if (noteStackPos == -1)
+                        break;
+
+                    // Note off for currently playing note
+                    if (noteStack[noteStackPos] == note) {
+                        // While note stack is not empty and previous held note already released
+                        while (noteStackPos >= 0 && !noteState[note]) {
+                            // Get next previously held note
+                            note = noteStack[--noteStackPos];
+                        }
+
+                        if (noteStackPos >= 0) {
+                            // A note is still held
+                            freq = 440.0f * powf(2.0f, (note - 69.0f) / 12.0f);
+                            osc->setFrequency(freq / fSampleRate);
+                        }
+                        else {
+                            // No notes held anymore
                             env->gate(false);
                         }
                     }
-                    else if (velo > 0) {
-                        freq = 440.0f * powf(2.0f, (note - 69.0f) / 12.0f);
-                        osc->setFrequency(freq / fSampleRate);
-                        noteState[note] = true;
-                        env->gate(true);
-                    }
-                    break;
-                case 0x80:
-                    note = data[1];
-                    // Make sure note number is within range 0 .. 127
-                    DISTRHO_SAFE_ASSERT_BREAK(note < 128);
 
-                    if (noteState[note]) {
-                        noteState[note] = false;
-                        env->gate(false);
-                    }
                     break;
             }
         }

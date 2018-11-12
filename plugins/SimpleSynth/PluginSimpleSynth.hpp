@@ -106,7 +106,9 @@ private:
     double   fSampleRate;
     ADSR     *env;
     WaveTableOsc *osc;
-    bool noteState[128];
+    bool     noteState[128];
+    int8_t   noteStack[128];
+    int8_t   noteStackPos;
 
     DISTRHO_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PluginSimpleSynth)
 };
