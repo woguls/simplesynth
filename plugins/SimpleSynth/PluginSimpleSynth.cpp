@@ -320,25 +320,39 @@ void PluginSimpleSynth::activate() {
 
 void PluginSimpleSynth::run(const float**, float** outputs, uint32_t frames,
                             const MidiEvent *midiEvents, uint32_t midiEventCount) {
-    // get the left and right audio outputs
-    float* const outL = outputs[0];
-    float* const outR = outputs[1];
-
     uint8_t note, velo;
     float freq, vol = fParams[paramVolume];
 
-    for (uint32_t count, pos=0, curEventIndex=0; pos<frames;) {
-        for (;curEventIndex < midiEventCount && pos >= midiEvents[curEventIndex].frame; ++curEventIndex) {
-            if (midiEvents[curEventIndex].size > MidiEvent::kDataSize)
+    // Loop over MIDI events in this block in batches grouped by event frame number,
+    // i.e. each batch has a number of events occuring at the same frame number.
+    // First we need to make an instance of sync helper in the for-loop initializer.
+    // The for-loop break condition is amsh.nextEvent(), when it returns null,
+    // there are no more events and the loop ends.
+    //
+    // One could also use a while-loop like this:
+    //
+    // AudioMidiSyncHelper amsh(outputs, frames, midiEvents, midiEventCount);
+    //
+    // while (amsh.nextEvent()) {
+    //    ...
+    // }
+    for (AudioMidiSyncHelper amsh(outputs, frames, midiEvents, midiEventCount); amsh.nextEvent();) {
+        // Loop over events in this batch
+        for (uint32_t i=0; i<amsh.midiEventCount; ++i) {
+            if (amsh.midiEvents[i].size > MidiEvent::kDataSize)
+                // Skip MIDI events with more than 3 bytes.
                 continue;
 
-            const uint8_t* data = midiEvents[curEventIndex].data;
+            const uint8_t* data = amsh.midiEvents[i].data;
+            // Determine MIDI event status by masking out MIDI channel in lower four bits.
             const uint8_t status = data[0] & 0xF0;
 
             switch (status) {
                 case 0x90:
+                    // Note On
                     note = data[1];
                     velo = data[2];
+                    // Make sure note number is within range 0 .. 127
                     DISTRHO_SAFE_ASSERT_BREAK(note < 128);
 
                     if (noteState[note]) {
@@ -357,6 +371,7 @@ void PluginSimpleSynth::run(const float**, float** outputs, uint32_t frames,
                         break;
                     }
                     break;
+                    // Fall-through for Note On with velocity 0 => Note Off
                 case 0x80:
                     note = data[1];
                     DISTRHO_SAFE_ASSERT_BREAK(note < 128);
@@ -370,21 +385,22 @@ void PluginSimpleSynth::run(const float**, float** outputs, uint32_t frames,
             }
         }
 
-        if (curEventIndex < midiEventCount && midiEvents[curEventIndex].frame < frames)
-            count = midiEvents[curEventIndex].frame - pos;
-        else
-            count = frames - pos;
 
-        for (uint32_t i=0; i<count; ++i) {
+        // Get the left and right audio outputs from the AudioMidiSyncHelper.
+        // This ensures that the pointer is positioned at the right frame within
+        // the block for the current batch.
+        float* const outL = amsh.outputs[0];
+        float* const outR = amsh.outputs[1];
+
+        // Write samples for the frames of the current batch
+        for (uint32_t i=0; i<amsh.frames; ++i) {
             float lfo_val = lfo->tick();
             freq = fParams[paramLPFCutoff] * pow(SEMITONE, fParams[paramLPFEnvAmount] * fenv->process());
             lpf->setCutoff(fmax(16.0f, fmin(20000.0, freq)));
             float sample = lpf->process(osc1->Process()) * ampenv->process() * vol;
-            outL[pos + i] = sample;
-            outR[pos + i] = sample;
+            outL[i] = sample;
+            outR[i] = sample;
         }
-
-        pos += count;
     }
 }
 
