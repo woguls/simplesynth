@@ -27,6 +27,8 @@ START_NAMESPACE_DISTRHO
 
 // -----------------------------------------------------------------------
 
+#define SEMITONE 1.0005777895065548f
+
 class PluginSimpleSynth : public Plugin {
 public:
     enum Parameters {

@@ -266,6 +266,7 @@ void PluginSimpleSynth::run(const float**, float** outputs, uint32_t frames,
                         if (velo == 0) {
                             noteState[note] = false;
                             ampenv->gate(false);
+                            fenv->gate(false);
                         }
                     }
                     else if (velo > 0) {
@@ -273,6 +274,7 @@ void PluginSimpleSynth::run(const float**, float** outputs, uint32_t frames,
                         osc1->SetFrequency(freq / fSampleRate);
                         noteState[note] = true;
                         ampenv->gate(true);
+                        fenv->gate(true);
                         break;
                     }
                     break;
@@ -283,6 +285,7 @@ void PluginSimpleSynth::run(const float**, float** outputs, uint32_t frames,
                     if (noteState[note]) {
                         noteState[note] = false;
                         ampenv->gate(false);
+                        fenv->gate(false);
                     }
                     break;
             }
@@ -294,7 +297,8 @@ void PluginSimpleSynth::run(const float**, float** outputs, uint32_t frames,
             count = frames - pos;
 
         for (uint32_t i=0; i<count; ++i) {
-            lpf->setCutoff(fParams[paramLPFCutoff] * fenv->process());
+            freq = fParams[paramLPFCutoff] * pow(SEMITONE, fParams[paramLPFEnvAmount] * fenv->process());
+            lpf->setCutoff(fmax(16.0f, fmin(20000.0, freq)));
             float sample = lpf->process(osc1->Process()) * ampenv->process() * vol;
             outL[pos + i] = sample;
             outR[pos + i] = sample;
