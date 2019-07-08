@@ -60,12 +60,14 @@ void PluginSimpleSynth::initParameter(uint32_t index, Parameter& parameter) {
         case paramAmpEnvAttack:
             parameter.name = "Amp. Env. Attack";
             parameter.symbol = "aenv_attack";
+            parameter.unit = "s";
             parameter.ranges.min = 0.001f;
             parameter.ranges.max = 10.0f;
             break;
         case paramAmpEnvDecay:
             parameter.name = "Amp. Env. Decay";
             parameter.symbol = "aenv_decay";
+            parameter.unit = "s";
             parameter.ranges.min = 0.0f;
             parameter.ranges.max = 10.0f;
             break;
@@ -77,18 +79,21 @@ void PluginSimpleSynth::initParameter(uint32_t index, Parameter& parameter) {
         case paramAmpEnvRelease:
             parameter.name = "Amp. Env. Release";
             parameter.symbol = "aenv_release";
+            parameter.unit = "s";
             parameter.ranges.min = 0.001f;
             parameter.ranges.max = 10.0f;
             break;
         case paramFEnvAttack:
             parameter.name = "F. Env. Attack";
             parameter.symbol = "fenv_attack";
+            parameter.unit = "s";
             parameter.ranges.min = 0.001f;
             parameter.ranges.max = 10.0f;
             break;
         case paramFEnvDecay:
             parameter.name = "F. Env. Decay";
             parameter.symbol = "fenv_decay";
+            parameter.unit = "s";
             parameter.ranges.min = 0.0f;
             parameter.ranges.max = 10.0f;
             break;
@@ -100,12 +105,15 @@ void PluginSimpleSynth::initParameter(uint32_t index, Parameter& parameter) {
         case paramFEnvRelease:
             parameter.name = "F. Env. Release";
             parameter.symbol = "fenv_release";
+            parameter.unit = "s";
             parameter.ranges.min = 0.001f;
             parameter.ranges.max = 10.0f;
             break;
         case paramLPFCutoff:
             parameter.name = "Cutoff";
             parameter.symbol = "lpf_cutoff";
+            parameter.hints |= kParameterIsLogarithmic;
+            parameter.unit = "hz";
             parameter.ranges.min = 16.0f;
             parameter.ranges.max = 20000.0f;
             parameter.ranges.def = 20000.0f;
@@ -219,6 +227,7 @@ void PluginSimpleSynth::loadProgram(uint32_t index) {
             setParameterValue(paramFEnvRelease, 0.1f);
             setParameterValue(paramLPFCutoff, 20000.0f);
             setParameterValue(paramLPFResonance, 0.0f);
+            setParameterValue(paramLPFEnvAmount, 0.0f);
             break;
     }
 }
