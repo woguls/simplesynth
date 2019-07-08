@@ -26,17 +26,19 @@ START_NAMESPACE_DISTRHO
 PluginSimpleSynth::PluginSimpleSynth()
     : Plugin(paramCount, 1, 0)  // paramCount params, 1 program(s), 0 states
 {
-    osc1 = sawOsc();
     ampenv = new ADSR();
     fenv = new ADSR();
     lpf = new LowPassFilter(getSampleRate());
+    lfo = new LFO(getSampleRate());
+    osc1 = sawOsc();
 }
 
 PluginSimpleSynth::~PluginSimpleSynth() {
     delete ampenv;
     delete fenv;
-    delete osc1;
+    delete lfo;
     delete lpf;
+    delete osc1;
 }
 
 // -----------------------------------------------------------------------
@@ -46,6 +48,7 @@ void PluginSimpleSynth::initParameter(uint32_t index, Parameter& parameter) {
     if (index >= paramCount)
         return;
 
+    ParameterEnumerationValue* const wforms = new ParameterEnumerationValue[LFO::kNumWave];
     parameter.ranges.min = 0.0f;
     parameter.ranges.max = 1.0f;
     parameter.ranges.def = 0.1f;
@@ -127,7 +130,56 @@ void PluginSimpleSynth::initParameter(uint32_t index, Parameter& parameter) {
         case paramLPFEnvAmount:
             parameter.name = "F. Env.->LPF";
             parameter.symbol = "lpf_fenv_amount";
+            parameter.unit = "cent";
+            parameter.hints |= kParameterIsInteger;
             parameter.ranges.def = 0.0f;
+            parameter.ranges.min = -12000.0f;
+            parameter.ranges.max = 12000.0f;
+            break;
+        case paramLFOWaveshape:
+            parameter.name = "LFO Shape";
+            parameter.symbol = "lfo_shape";
+            parameter.hints |= kParameterIsInteger;
+            parameter.ranges.def = LFO::triangle;
+            wforms[0].label = "Triangle";
+            wforms[0].value = LFO::triangle;
+            wforms[1].label = "Sine";
+            wforms[1].value = LFO::sinus;
+            wforms[2].label = "Sawtooth";
+            wforms[2].value = LFO::sawtooth;
+            wforms[3].label = "Square";
+            wforms[3].value = LFO::square;
+            wforms[4].label = "Exponential";
+            wforms[4].value = LFO::exponent;
+            parameter.enumValues.count = LFO::kNumWave;
+            parameter.enumValues.restrictedMode = true;
+            parameter.enumValues.values = wforms;
+            break;
+        case paramLFOFrequency:
+            parameter.name = "LFO Freq.";
+            parameter.symbol = "lfo_freq";
+            parameter.unit = "hz";
+            parameter.ranges.min = 0.01f;
+            parameter.ranges.max = 30.0f;
+            parameter.ranges.def = 8.0f;
+            break;
+        case paramLFOFilterAmount:
+            parameter.name = "LFO->Filter";
+            parameter.symbol = "lfo_filter_amount";
+            parameter.unit = "cent";
+            parameter.hints |= kParameterIsInteger;
+            parameter.ranges.def = 0.0f;
+            parameter.ranges.min = -12000.0f;
+            parameter.ranges.max = 12000.0f;
+            break;
+        case paramLFOOscAmount:
+            parameter.name = "LFO->Osc";
+            parameter.symbol = "lfo_osc_amount";
+            parameter.unit = "cent";
+            parameter.hints |= kParameterIsInteger;
+            parameter.ranges.def = 0.0f;
+            parameter.ranges.min = -12000.0f;
+            parameter.ranges.max = 12000.0f;
             break;
         }
 }
@@ -152,6 +204,7 @@ void PluginSimpleSynth::initProgramName(uint32_t index, String& programName) {
 */
 void PluginSimpleSynth::sampleRateChanged(double newSampleRate) {
     fSampleRate = newSampleRate;
+    lfo->setSampleRate(newSampleRate);
     lpf->setSampleRate(newSampleRate);
 }
 
@@ -205,6 +258,18 @@ void PluginSimpleSynth::setParameterValue(uint32_t index, float value) {
         case paramLPFEnvAmount:
             // nothing to do
             break;
+        case paramLFOWaveshape:
+            lfo->setWaveform((LFO::waveform_t)value);
+            break;
+        case paramLFOFrequency:
+            lfo->setRate(value);
+            break;
+        case paramLFOFilterAmount:
+            // nothing to do
+            break;
+        case paramLFOOscAmount:
+            // nothing to do
+            break;
         }
 }
 
@@ -228,6 +293,10 @@ void PluginSimpleSynth::loadProgram(uint32_t index) {
             setParameterValue(paramLPFCutoff, 20000.0f);
             setParameterValue(paramLPFResonance, 0.0f);
             setParameterValue(paramLPFEnvAmount, 0.0f);
+            setParameterValue(paramLFOWaveshape, LFO::triangle);
+            setParameterValue(paramLFOFrequency, 8.0f);
+            setParameterValue(paramLFOFilterAmount, 0.0f);
+            setParameterValue(paramLFOOscAmount, 0.0f);
             break;
     }
 }
@@ -243,6 +312,7 @@ void PluginSimpleSynth::activate() {
     sampleRateChanged(getSampleRate());
     ampenv->reset();
     fenv->reset();
+    lfo->reset();
     lpf->reset();
     osc1->SetFrequency(440.0f / fSampleRate);
     loadProgram(0);
@@ -306,6 +376,7 @@ void PluginSimpleSynth::run(const float**, float** outputs, uint32_t frames,
             count = frames - pos;
 
         for (uint32_t i=0; i<count; ++i) {
+            float lfo_val = lfo->tick();
             freq = fParams[paramLPFCutoff] * pow(SEMITONE, fParams[paramLPFEnvAmount] * fenv->process());
             lpf->setCutoff(fmax(16.0f, fmin(20000.0, freq)));
             float sample = lpf->process(osc1->Process()) * ampenv->process() * vol;

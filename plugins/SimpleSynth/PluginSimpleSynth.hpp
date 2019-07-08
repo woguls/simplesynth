@@ -20,6 +20,7 @@
 
 #include "DistrhoPlugin.hpp"
 #include "ADSR.hpp"
+#include "LFO.hpp"
 #include "LPF.hpp"
 #include "WaveUtils.h"
 
@@ -44,6 +45,10 @@ public:
         paramLPFCutoff,
         paramLPFResonance,
         paramLPFEnvAmount,
+        paramLFOWaveshape,
+        paramLFOFrequency,
+        paramLFOFilterAmount,
+        paramLFOOscAmount,
         paramCount
     };
 
@@ -119,6 +124,7 @@ private:
     float           fParams[paramCount];
     double          fSampleRate;
     ADSR            *ampenv, *fenv;
+    LFO             *lfo;
     LowPassFilter   *lpf;
     WaveTableOsc    *osc1;
     bool            noteState[128];
