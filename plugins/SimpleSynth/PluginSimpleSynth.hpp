@@ -20,7 +20,8 @@
 
 #include "DistrhoPlugin.hpp"
 #include "ADSR.hpp"
-#include "WaveUtils.hpp"
+#include "LPF.hpp"
+#include "WaveUtils.h"
 
 START_NAMESPACE_DISTRHO
 
@@ -30,6 +31,17 @@ class PluginSimpleSynth : public Plugin {
 public:
     enum Parameters {
         paramVolume = 0,
+        paramAmpEnvAttack,
+        paramAmpEnvDecay,
+        paramAmpEnvSustain,
+        paramAmpEnvRelease,
+        paramFEnvAttack,
+        paramFEnvDecay,
+        paramFEnvSustain,
+        paramFEnvRelease,
+        paramLPFCutoff,
+        paramLPFResonance,
+        paramLPFEnvAmount,
         paramCount
     };
 
@@ -102,11 +114,12 @@ protected:
     // -------------------------------------------------------------------
 
 private:
-    float    fParams[paramCount];
-    double   fSampleRate;
-    ADSR     *env;
-    WaveTableOsc *osc;
-    bool noteState[128];
+    float           fParams[paramCount];
+    double          fSampleRate;
+    ADSR            *ampenv, *fenv;
+    LowPassFilter   *lpf;
+    WaveTableOsc    *osc1;
+    bool            noteState[128];
 
     DISTRHO_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PluginSimpleSynth)
 };

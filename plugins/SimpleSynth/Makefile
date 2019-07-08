@@ -14,7 +14,7 @@ NAME = simplesynth
 
 OBJS_DSP = \
 	ADSR.cpp.o \
-	WaveTableOsc.cpp.o \
+	LPF.cpp.o \
 	WaveUtils.cpp.o \
 	PluginSimpleSynth.cpp.o
 

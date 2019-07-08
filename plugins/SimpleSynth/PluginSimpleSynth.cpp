@@ -26,15 +26,17 @@ START_NAMESPACE_DISTRHO
 PluginSimpleSynth::PluginSimpleSynth()
     : Plugin(paramCount, 1, 0)  // paramCount params, 1 program(s), 0 states
 {
-    sampleRateChanged(getSampleRate());
-    osc = sawOsc();
-    env = new ADSR();
-    loadProgram(0);
+    osc1 = sawOsc();
+    ampenv = new ADSR();
+    fenv = new ADSR();
+    lpf = new LowPassFilter(getSampleRate());
 }
 
 PluginSimpleSynth::~PluginSimpleSynth() {
-    delete env;
-    delete osc;
+    delete ampenv;
+    delete fenv;
+    delete osc1;
+    delete lpf;
 }
 
 // -----------------------------------------------------------------------
@@ -47,14 +49,79 @@ void PluginSimpleSynth::initParameter(uint32_t index, Parameter& parameter) {
     parameter.ranges.min = 0.0f;
     parameter.ranges.max = 1.0f;
     parameter.ranges.def = 0.1f;
-    parameter.hints = kParameterIsAutomable | kParameterIsLogarithmic;
+    parameter.hints = kParameterIsAutomable;
 
     switch (index) {
         case paramVolume:
             parameter.name = "Volume";
             parameter.symbol = "volume";
+            //parameter.hints |= kParameterIsLogarithmic;
             break;
-    }
+        case paramAmpEnvAttack:
+            parameter.name = "Amp. Env. Attack";
+            parameter.symbol = "aenv_attack";
+            parameter.ranges.min = 0.001f;
+            parameter.ranges.max = 10.0f;
+            break;
+        case paramAmpEnvDecay:
+            parameter.name = "Amp. Env. Decay";
+            parameter.symbol = "aenv_decay";
+            parameter.ranges.min = 0.0f;
+            parameter.ranges.max = 10.0f;
+            break;
+        case paramAmpEnvSustain:
+            parameter.name = "Amp. Env. Sustain";
+            parameter.symbol = "aenv_sustain";
+            parameter.ranges.def = 1.0f;
+            break;
+        case paramAmpEnvRelease:
+            parameter.name = "Amp. Env. Release";
+            parameter.symbol = "aenv_release";
+            parameter.ranges.min = 0.001f;
+            parameter.ranges.max = 10.0f;
+            break;
+        case paramFEnvAttack:
+            parameter.name = "F. Env. Attack";
+            parameter.symbol = "fenv_attack";
+            parameter.ranges.min = 0.001f;
+            parameter.ranges.max = 10.0f;
+            break;
+        case paramFEnvDecay:
+            parameter.name = "F. Env. Decay";
+            parameter.symbol = "fenv_decay";
+            parameter.ranges.min = 0.0f;
+            parameter.ranges.max = 10.0f;
+            break;
+        case paramFEnvSustain:
+            parameter.name = "F. Env. Sustain";
+            parameter.symbol = "fenv_sustain";
+            parameter.ranges.def = 1.0f;
+            break;
+        case paramFEnvRelease:
+            parameter.name = "F. Env. Release";
+            parameter.symbol = "fenv_release";
+            parameter.ranges.min = 0.001f;
+            parameter.ranges.max = 10.0f;
+            break;
+        case paramLPFCutoff:
+            parameter.name = "Cutoff";
+            parameter.symbol = "lpf_cutoff";
+            parameter.ranges.min = 16.0f;
+            parameter.ranges.max = 20000.0f;
+            parameter.ranges.def = 20000.0f;
+            parameter.ranges.def = 1.0f;
+            break;
+        case paramLPFResonance:
+            parameter.name = "Resonance";
+            parameter.symbol = "lpf_reso";
+            parameter.ranges.def = 0.0f;
+            break;
+        case paramLPFEnvAmount:
+            parameter.name = "F. Env.->LPF";
+            parameter.symbol = "lpf_fenv_amount";
+            parameter.ranges.def = 0.0f;
+            break;
+        }
 }
 
 /**
@@ -77,6 +144,7 @@ void PluginSimpleSynth::initProgramName(uint32_t index, String& programName) {
 */
 void PluginSimpleSynth::sampleRateChanged(double newSampleRate) {
     fSampleRate = newSampleRate;
+    lpf->setSampleRate(newSampleRate);
 }
 
 /**
@@ -94,9 +162,42 @@ void PluginSimpleSynth::setParameterValue(uint32_t index, float value) {
 
     switch (index) {
         case paramVolume:
-            // nothing to do here...
+            // do something when volume param is set
             break;
-    }
+        case paramAmpEnvAttack:
+            ampenv->setAttackRate(value * fSampleRate);
+            break;
+        case paramAmpEnvDecay:
+            ampenv->setDecayRate(value * fSampleRate);
+            break;
+        case paramAmpEnvSustain:
+            ampenv->setSustainLevel(value);
+            break;
+        case paramAmpEnvRelease:
+            ampenv->setReleaseRate(value * fSampleRate);
+            break;
+        case paramFEnvAttack:
+            fenv->setAttackRate(value * fSampleRate);
+            break;
+        case paramFEnvDecay:
+            fenv->setDecayRate(value * fSampleRate);
+            break;
+        case paramFEnvSustain:
+            fenv->setSustainLevel(value);
+            break;
+        case paramFEnvRelease:
+            fenv->setReleaseRate(value * fSampleRate);
+            break;
+        case paramLPFCutoff:
+            // nothing to do
+            break;
+        case paramLPFResonance:
+            lpf->setResonance(value);
+            break;
+        case paramLPFEnvAmount:
+            // nothing to do
+            break;
+        }
 }
 
 /**
@@ -107,7 +208,17 @@ void PluginSimpleSynth::setParameterValue(uint32_t index, float value) {
 void PluginSimpleSynth::loadProgram(uint32_t index) {
     switch (index) {
         case 0:
-            setParameterValue(paramVolume, 0.6f);
+            setParameterValue(paramVolume, 0.01f);
+            setParameterValue(paramAmpEnvAttack, 0.1f);
+            setParameterValue(paramAmpEnvDecay, 0.3f);
+            setParameterValue(paramAmpEnvSustain, 0.8f);
+            setParameterValue(paramAmpEnvRelease, 0.2f);
+            setParameterValue(paramFEnvAttack, 0.1f);
+            setParameterValue(paramFEnvDecay, 0.0f);
+            setParameterValue(paramFEnvSustain, 1.0f);
+            setParameterValue(paramFEnvRelease, 0.1f);
+            setParameterValue(paramLPFCutoff, 20000.0f);
+            setParameterValue(paramLPFResonance, 0.0f);
             break;
     }
 }
@@ -116,17 +227,16 @@ void PluginSimpleSynth::loadProgram(uint32_t index) {
 // Process
 
 void PluginSimpleSynth::activate() {
-    double fSampleRate = getSampleRate();
-    osc->setFrequency(440.0f / fSampleRate);
-
-    env->setAttackRate(0.1f * fSampleRate);
-    env->setDecayRate(0.3f * fSampleRate);
-    env->setReleaseRate(2.0f * fSampleRate);
-    env->setSustainLevel(0.8f);
-
     for (int i=0; i < 128; i++) {
         noteState[i] = false;
     }
+
+    sampleRateChanged(getSampleRate());
+    ampenv->reset();
+    fenv->reset();
+    lpf->reset();
+    osc1->SetFrequency(440.0f / fSampleRate);
+    loadProgram(0);
 }
 
 void PluginSimpleSynth::run(const float**, float** outputs, uint32_t frames,
@@ -155,14 +265,14 @@ void PluginSimpleSynth::run(const float**, float** outputs, uint32_t frames,
                     if (noteState[note]) {
                         if (velo == 0) {
                             noteState[note] = false;
-                            env->gate(false);
+                            ampenv->gate(false);
                         }
                     }
                     else if (velo > 0) {
                         freq = 440.0f * powf(2.0f, (note - 69.0f) / 12.0f);
-                        osc->setFrequency(freq / fSampleRate);
+                        osc1->SetFrequency(freq / fSampleRate);
                         noteState[note] = true;
-                        env->gate(true);
+                        ampenv->gate(true);
                         break;
                     }
                     break;
@@ -172,7 +282,7 @@ void PluginSimpleSynth::run(const float**, float** outputs, uint32_t frames,
 
                     if (noteState[note]) {
                         noteState[note] = false;
-                        env->gate(false);
+                        ampenv->gate(false);
                     }
                     break;
             }
@@ -184,10 +294,10 @@ void PluginSimpleSynth::run(const float**, float** outputs, uint32_t frames,
             count = frames - pos;
 
         for (uint32_t i=0; i<count; ++i) {
-            float sample = osc->getOutput() * env->process() * vol;
+            lpf->setCutoff(fParams[paramLPFCutoff] * fenv->process());
+            float sample = lpf->process(osc1->Process()) * ampenv->process() * vol;
             outL[pos + i] = sample;
             outR[pos + i] = sample;
-            osc->updatePhase();
         }
 
         pos += count;
