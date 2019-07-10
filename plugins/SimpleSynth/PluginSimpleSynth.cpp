@@ -142,6 +142,8 @@ void PluginSimpleSynth::initParameter(uint32_t index, Parameter& parameter) {
             parameter.symbol = "lfo_shape";
             parameter.hints |= kParameterIsInteger;
             parameter.ranges.def = LFO::triangle;
+            parameter.ranges.min = 0;
+            parameter.ranges.max = LFO::kNumWave - 1;
             wforms[0].label = "Triangle";
             wforms[0].value = LFO::triangle;
             wforms[1].label = "Sine";
