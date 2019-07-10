@@ -31,6 +31,7 @@ PluginSimpleSynth::PluginSimpleSynth()
     lpf = new LowPassFilter(getSampleRate());
     lfo = new LFO(getSampleRate());
     osc1 = sawOsc();
+    loadProgram(0);
 }
 
 PluginSimpleSynth::~PluginSimpleSynth() {
@@ -311,7 +312,6 @@ void PluginSimpleSynth::activate() {
     lfo->reset();
     lpf->reset();
     osc1->SetFrequency(440.0f / fSampleRate);
-    loadProgram(0);
 
     for (int i=0; i < 128; i++) {
         noteState[i] = false;
