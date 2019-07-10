@@ -49,7 +49,6 @@ void PluginSimpleSynth::initParameter(uint32_t index, Parameter& parameter) {
     if (index >= paramCount)
         return;
 
-    ParameterEnumerationValue* const wforms = new ParameterEnumerationValue[LFO::kNumWave];
     parameter.ranges.min = 0.0f;
     parameter.ranges.max = 1.0f;
     parameter.ranges.def = 0.1f;
@@ -138,6 +137,7 @@ void PluginSimpleSynth::initParameter(uint32_t index, Parameter& parameter) {
             parameter.ranges.max = 12000.0f;
             break;
         case paramLFOWaveshape:
+            ParameterEnumerationValue* const wforms = new ParameterEnumerationValue[LFO::kNumWave];
             parameter.name = "LFO Shape";
             parameter.symbol = "lfo_shape";
             parameter.hints |= kParameterIsInteger;
