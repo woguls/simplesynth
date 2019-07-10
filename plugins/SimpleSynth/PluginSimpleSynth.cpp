@@ -321,6 +321,16 @@ void PluginSimpleSynth::activate() {
     noteStackPos = -1;
 }
 
+void PluginSimpleSynth::note_on(int8_t note, bool retrigger) {
+    float freq = 440.0f * powf(2.0f, (note - 69.0f) / 12.0f);
+    osc1->SetFrequency(freq / fSampleRate);
+
+    if (retrigger) {
+        ampenv->gate(true);
+        fenv->gate(true);
+    }
+}
+
 void PluginSimpleSynth::run(const float**, float** outputs, uint32_t frames,
                             const MidiEvent *midiEvents, uint32_t midiEventCount) {
     uint8_t note, velo;
@@ -365,14 +375,8 @@ void PluginSimpleSynth::run(const float**, float** outputs, uint32_t frames,
                             // XXX: re-trigger envelopes here?
                             break;
 
-                        if (noteStackPos == -1) {
-                            ampenv->gate(true);
-                            fenv->gate(true);
-                        }
-
+                        note_on(note, noteStackPos == -1);
                         noteStack[++noteStackPos] = note;
-                        freq = 440.0f * powf(2.0f, (note - 69.0f) / 12.0f);
-                        osc1->SetFrequency(freq / fSampleRate);
                         break;
                     }
                     // Fall-through for Note On with velocity 0 => Note Off
@@ -395,8 +399,7 @@ void PluginSimpleSynth::run(const float**, float** outputs, uint32_t frames,
 
                         if (noteStackPos >= 0) {
                             // A note is still held
-                            freq = 440.0f * powf(2.0f, (note - 69.0f) / 12.0f);
-                            osc1->SetFrequency(freq / fSampleRate);
+                            note_on(note, false);
                         }
                         else {
                             // No notes held anymore

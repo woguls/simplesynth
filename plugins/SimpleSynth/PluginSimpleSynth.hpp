@@ -116,6 +116,7 @@ protected:
     // Process
 
     void activate() override;
+    void note_on(int8_t note, bool retrigger);
     void run(const float**, float** outputs, uint32_t frames,
              const MidiEvent *midiEvents, uint32_t midiEventCount) override;
 
