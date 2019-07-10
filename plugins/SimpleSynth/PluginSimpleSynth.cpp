@@ -305,10 +305,6 @@ void PluginSimpleSynth::loadProgram(uint32_t index) {
 // Process
 
 void PluginSimpleSynth::activate() {
-    for (int i=0; i < 128; i++) {
-        noteState[i] = false;
-    }
-
     sampleRateChanged(getSampleRate());
     ampenv->reset();
     fenv->reset();
@@ -316,6 +312,13 @@ void PluginSimpleSynth::activate() {
     lpf->reset();
     osc1->SetFrequency(440.0f / fSampleRate);
     loadProgram(0);
+
+    for (int i=0; i < 128; i++) {
+        noteState[i] = false;
+        noteStack[i] = -1;
+    }
+
+    noteStackPos = -1;
 }
 
 void PluginSimpleSynth::run(const float**, float** outputs, uint32_t frames,
@@ -355,36 +358,56 @@ void PluginSimpleSynth::run(const float**, float** outputs, uint32_t frames,
                     // Make sure note number is within range 0 .. 127
                     DISTRHO_SAFE_ASSERT_BREAK(note < 128);
 
-                    if (noteState[note]) {
-                        if (velo == 0) {
-                            noteState[note] = false;
-                            ampenv->gate(false);
-                            fenv->gate(false);
+                    if (velo > 0) {
+                        noteState[note] = true;
+
+                        if (noteStackPos >= 0 && note == noteStack[noteStackPos])
+                            // XXX: re-trigger envelopes here?
+                            break;
+
+                        if (noteStackPos == -1) {
+                            ampenv->gate(true);
+                            fenv->gate(true);
                         }
-                    }
-                    else if (velo > 0) {
+
+                        noteStack[++noteStackPos] = note;
                         freq = 440.0f * powf(2.0f, (note - 69.0f) / 12.0f);
                         osc1->SetFrequency(freq / fSampleRate);
-                        noteState[note] = true;
-                        ampenv->gate(true);
-                        fenv->gate(true);
                         break;
                     }
-                    break;
                     // Fall-through for Note On with velocity 0 => Note Off
                 case 0x80:
                     note = data[1];
                     DISTRHO_SAFE_ASSERT_BREAK(note < 128);
+                    noteState[note] = false;
 
-                    if (noteState[note]) {
-                        noteState[note] = false;
-                        ampenv->gate(false);
-                        fenv->gate(false);
+                    // No note currently playing
+                    if (noteStackPos == -1)
+                        break;
+
+                    // Note off for currently playing note
+                    if (noteStack[noteStackPos] == note) {
+                        // While note stack is not empty and previous held note already released
+                        while (noteStackPos >= 0 && !noteState[note]) {
+                            // Get next previously held note
+                            note = noteStack[--noteStackPos];
+                        }
+
+                        if (noteStackPos >= 0) {
+                            // A note is still held
+                            freq = 440.0f * powf(2.0f, (note - 69.0f) / 12.0f);
+                            osc1->SetFrequency(freq / fSampleRate);
+                        }
+                        else {
+                            // No notes held anymore
+                            ampenv->gate(false);
+                            fenv->gate(false);
+                        }
                     }
+
                     break;
             }
         }
-
 
         // Get the left and right audio outputs from the AudioMidiSyncHelper.
         // This ensures that the pointer is positioned at the right frame within
