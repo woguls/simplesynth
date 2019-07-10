@@ -132,6 +132,8 @@ private:
     bool            noteState[128];
     int8_t          noteStack[128];
     int8_t          noteStackPos;
+    float           noteFreqs[128];
+    float           curNoteFreq;
 
     DISTRHO_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PluginSimpleSynth)
 };

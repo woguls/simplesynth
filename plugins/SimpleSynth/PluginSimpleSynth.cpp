@@ -316,14 +316,14 @@ void PluginSimpleSynth::activate() {
     for (int i=0; i < 128; i++) {
         noteState[i] = false;
         noteStack[i] = -1;
+        noteFreqs[i] = 440.0f * powf(2.0f, (i - 69.0f) / 12.0f);
     }
 
     noteStackPos = -1;
 }
 
 void PluginSimpleSynth::note_on(int8_t note, bool retrigger) {
-    float freq = 440.0f * powf(2.0f, (note - 69.0f) / 12.0f);
-    osc1->SetFrequency(freq / fSampleRate);
+    curNoteFreq = noteFreqs[note];
 
     if (retrigger) {
         ampenv->gate(true);
@@ -334,7 +334,7 @@ void PluginSimpleSynth::note_on(int8_t note, bool retrigger) {
 void PluginSimpleSynth::run(const float**, float** outputs, uint32_t frames,
                             const MidiEvent *midiEvents, uint32_t midiEventCount) {
     uint8_t note, velo;
-    float freq, vol = fParams[paramVolume];
+    float cutoff, oscfreq, vol = fParams[paramVolume];
 
     // Loop over MIDI events in this block in batches grouped by event frame number,
     // i.e. each batch has a number of events occuring at the same frame number.
@@ -420,9 +420,10 @@ void PluginSimpleSynth::run(const float**, float** outputs, uint32_t frames,
 
         // Write samples for the frames of the current batch
         for (uint32_t i=0; i<amsh.frames; ++i) {
-            float lfo_val = lfo->tick();
-            freq = fParams[paramLPFCutoff] * pow(SEMITONE, fParams[paramLPFEnvAmount] * fenv->process());
-            lpf->setCutoff(fmax(16.0f, fmin(20000.0, freq)));
+            cutoff = fParams[paramLPFCutoff] * pow(SEMITONE, fParams[paramLPFEnvAmount] * fenv->process());
+            lpf->setCutoff(fmax(16.0f, fmin(20000.0, cutoff)));
+            oscfreq = curNoteFreq * pow(SEMITONE, fParams[paramLFOOscAmount] * lfo->tick());
+            osc1->SetFrequency(oscfreq / fSampleRate);
             float sample = lpf->process(osc1->Process()) * ampenv->process() * vol;
             outL[i] = sample;
             outR[i] = sample;
