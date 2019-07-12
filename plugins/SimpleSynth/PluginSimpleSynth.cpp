@@ -59,69 +59,77 @@ void PluginSimpleSynth::initParameter(uint32_t index, Parameter& parameter) {
         case paramVolume:
             parameter.name = "Volume";
             parameter.symbol = "volume";
-            //parameter.hints |= kParameterIsLogarithmic;
+            parameter.ranges.def = 0.8f;
+            parameter.hints |= kParameterIsLogarithmic;
             break;
         case paramAmpEnvAttack:
             parameter.name = "Amp. Env. Attack";
             parameter.symbol = "aenv_attack";
             parameter.unit = "s";
-            parameter.ranges.min = 0.001f;
+            parameter.ranges.def = 0.0f;
             parameter.ranges.max = 10.0f;
+            parameter.ranges.min = 0.001f;
             break;
         case paramAmpEnvDecay:
             parameter.name = "Amp. Env. Decay";
             parameter.symbol = "aenv_decay";
             parameter.unit = "s";
-            parameter.ranges.min = 0.0f;
+            parameter.ranges.def = 0.0f;
             parameter.ranges.max = 10.0f;
+            parameter.ranges.min = 0.0f;
             break;
         case paramAmpEnvSustain:
             parameter.name = "Amp. Env. Sustain";
             parameter.symbol = "aenv_sustain";
+            parameter.hints |= kParameterIsLogarithmic;
             parameter.ranges.def = 1.0f;
             break;
         case paramAmpEnvRelease:
             parameter.name = "Amp. Env. Release";
             parameter.symbol = "aenv_release";
             parameter.unit = "s";
-            parameter.ranges.min = 0.001f;
+            parameter.ranges.def = 0.0f;
             parameter.ranges.max = 10.0f;
+            parameter.ranges.min = 0.001f;
             break;
         case paramFEnvAttack:
             parameter.name = "F. Env. Attack";
             parameter.symbol = "fenv_attack";
             parameter.unit = "s";
-            parameter.ranges.min = 0.001f;
+            parameter.ranges.def = 0.0f;
             parameter.ranges.max = 10.0f;
+            parameter.ranges.min = 0.001f;
             break;
         case paramFEnvDecay:
             parameter.name = "F. Env. Decay";
             parameter.symbol = "fenv_decay";
             parameter.unit = "s";
-            parameter.ranges.min = 0.0f;
+            parameter.ranges.def = 0.0f;
             parameter.ranges.max = 10.0f;
+            parameter.ranges.min = 0.0f;
             break;
         case paramFEnvSustain:
             parameter.name = "F. Env. Sustain";
             parameter.symbol = "fenv_sustain";
+            parameter.hints |= kParameterIsLogarithmic;
             parameter.ranges.def = 1.0f;
             break;
         case paramFEnvRelease:
             parameter.name = "F. Env. Release";
             parameter.symbol = "fenv_release";
             parameter.unit = "s";
-            parameter.ranges.min = 0.001f;
+            parameter.ranges.def = 0.0f;
             parameter.ranges.max = 10.0f;
+            parameter.ranges.min = 0.001f;
             break;
         case paramLPFCutoff:
             parameter.name = "Cutoff";
             parameter.symbol = "lpf_cutoff";
-            parameter.hints |= kParameterIsLogarithmic;
             parameter.unit = "hz";
-            parameter.ranges.min = 16.0f;
-            parameter.ranges.max = 20000.0f;
-            parameter.ranges.def = 20000.0f;
-            parameter.ranges.def = 1.0f;
+            parameter.hints |= kParameterIsInteger;
+            parameter.ranges.min = 16;
+            parameter.ranges.max = 20000;
+            parameter.ranges.def = 20000;
             break;
         case paramLPFResonance:
             parameter.name = "Resonance";
@@ -133,9 +141,9 @@ void PluginSimpleSynth::initParameter(uint32_t index, Parameter& parameter) {
             parameter.symbol = "lpf_fenv_amount";
             parameter.unit = "cent";
             parameter.hints |= kParameterIsInteger;
-            parameter.ranges.def = 0.0f;
-            parameter.ranges.min = -12000.0f;
-            parameter.ranges.max = 12000.0f;
+            parameter.ranges.def = 0;
+            parameter.ranges.min = -12000;
+            parameter.ranges.max = 12000;
             break;
         case paramLFOWaveshape:
             parameter.name = "LFO Shape";
@@ -171,18 +179,18 @@ void PluginSimpleSynth::initParameter(uint32_t index, Parameter& parameter) {
             parameter.symbol = "lfo_filter_amount";
             parameter.unit = "cent";
             parameter.hints |= kParameterIsInteger;
-            parameter.ranges.def = 0.0f;
-            parameter.ranges.min = -12000.0f;
-            parameter.ranges.max = 12000.0f;
+            parameter.ranges.def = 0;
+            parameter.ranges.min = -12000;
+            parameter.ranges.max = 12000;
             break;
         case paramLFOOscAmount:
             parameter.name = "LFO->Osc";
             parameter.symbol = "lfo_osc_amount";
             parameter.unit = "cent";
             parameter.hints |= kParameterIsInteger;
-            parameter.ranges.def = 0.0f;
-            parameter.ranges.min = -12000.0f;
-            parameter.ranges.max = 12000.0f;
+            parameter.ranges.def = 0;
+            parameter.ranges.min = -12000;
+            parameter.ranges.max = 12000;
             break;
         }
 }
@@ -284,22 +292,22 @@ void PluginSimpleSynth::setParameterValue(uint32_t index, float value) {
 void PluginSimpleSynth::loadProgram(uint32_t index) {
     switch (index) {
         case 0:
-            setParameterValue(paramVolume, 0.01f);
-            setParameterValue(paramAmpEnvAttack, 0.1f);
-            setParameterValue(paramAmpEnvDecay, 0.3f);
-            setParameterValue(paramAmpEnvSustain, 0.8f);
-            setParameterValue(paramAmpEnvRelease, 0.2f);
-            setParameterValue(paramFEnvAttack, 0.1f);
-            setParameterValue(paramFEnvDecay, 0.0f);
+            setParameterValue(paramVolume, 0.8f);
+            setParameterValue(paramAmpEnvAttack, 0.001f);
+            setParameterValue(paramAmpEnvDecay, 0);
+            setParameterValue(paramAmpEnvSustain, 1.f);
+            setParameterValue(paramAmpEnvRelease, 0.001f);
+            setParameterValue(paramFEnvAttack, 0.001f);
+            setParameterValue(paramFEnvDecay, 0);
             setParameterValue(paramFEnvSustain, 1.0f);
-            setParameterValue(paramFEnvRelease, 0.1f);
-            setParameterValue(paramLPFCutoff, 20000.0f);
-            setParameterValue(paramLPFResonance, 0.0f);
-            setParameterValue(paramLPFEnvAmount, 0.0f);
+            setParameterValue(paramFEnvRelease, 0.001f);
+            setParameterValue(paramLPFCutoff, 20000);
+            setParameterValue(paramLPFResonance, 0);
+            setParameterValue(paramLPFEnvAmount, 0);
             setParameterValue(paramLFOWaveshape, LFO::triangle);
             setParameterValue(paramLFOFrequency, 8.0f);
-            setParameterValue(paramLFOFilterAmount, 0.0f);
-            setParameterValue(paramLFOOscAmount, 0.0f);
+            setParameterValue(paramLFOFilterAmount, 0);
+            setParameterValue(paramLFOOscAmount, 0);
             break;
     }
 }
