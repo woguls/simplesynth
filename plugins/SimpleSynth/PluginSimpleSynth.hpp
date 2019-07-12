@@ -19,7 +19,7 @@
 #define PLUGIN_SIMPLESYNTH_H
 
 #include "DistrhoPlugin.hpp"
-#include "AudioSyncHelper.hpp"
+#include "DistrhoPluginUtils.hpp"
 #include "ADSR.hpp"
 #include "LFO.hpp"
 #include "LPF.hpp"
