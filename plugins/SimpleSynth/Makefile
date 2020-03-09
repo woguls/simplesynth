@@ -10,13 +10,16 @@
 NAME = simplesynth
 
 # --------------------------------------------------------------
+# Use the csound api
+
+LDFLAGS += -lcsound64
+
+# --------------------------------------------------------------
 # Files to build
 
 OBJS_DSP = \
-	ADSR.cpp.o \
-	WaveTableOsc.cpp.o \
-	WaveUtils.cpp.o \
-	PluginSimpleSynth.cpp.o
+	CsoundSession.cpp.o \
+	PluginCsound.cpp.o
 
 # --------------------------------------------------------------
 # Do some magic
