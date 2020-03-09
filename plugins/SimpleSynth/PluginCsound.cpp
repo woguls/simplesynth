@@ -2,7 +2,8 @@
  * csoundlv2 audio effect based on DISTRHO Plugin Framework (DPF)
  *
  * SPDX-License-Identifier: MIT
- *
+ * 
+ * Copyright (C) 2018 Christopher Arndt <info@chrisarndt.de>
  * Copyright (C) 2020 David DeWert <daviddewert@gmail.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
