@@ -1,3 +1,3 @@
 # Simple Synth
 
-A simple sawtooth wave synthesizer
+A simple Csound plugin
