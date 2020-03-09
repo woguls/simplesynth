@@ -35,8 +35,6 @@ const char* orc1 =
 "instr 1              \n"
 "iamp = p4/127 \n"
 "ipch = cpsmidinn(p5)    \n"
-"printk2 iamp \n"
-"printk2 ipch \n"
 "a1   poscil iamp, ipch \n"
 "     outs    a1,a1         \n"
 "endin";
