@@ -1,3 +1,3 @@
 # Simple Synth
 
-A simple Csound plugin
+A simple way to make lv2 plugins with csound
