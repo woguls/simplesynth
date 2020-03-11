@@ -1,4 +1,5 @@
 <plugin>
+	<name>simplesynth</name>
 	<label>csound-simplesynth</label>
 	<description>a simple synth made with csound</description>
 	<maker>David DeWert</maker>

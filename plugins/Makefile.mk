@@ -25,7 +25,7 @@ endef
 TARGET_DIR = ../../bin
 
 BUILD_C_FLAGS   += -I.
-BUILD_CXX_FLAGS += -I. -I../../dpf/distrho -I../../dpf/dgl
+BUILD_CXX_FLAGS += -I. -I../../dpf/distrho -I../../dpf/dgl -I../../plugins/csound-session
 
 ifeq ($(HAVE_DGL),true)
 BASE_FLAGS += -DHAVE_DGL
@@ -87,6 +87,7 @@ all:
 
 clean:
 	rm -f *.d *.o *.out.cpp *.out.hpp DistrhoPluginInfo.h
+	rm -f ../../plugins/csound-session/*.d
 	rm -rf $(TARGET_DIR)/$(NAME) $(TARGET_DIR)/$(NAME)-* $(TARGET_DIR)/$(NAME).lv2/
 
 # --------------------------------------------------------------
