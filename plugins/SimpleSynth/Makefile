@@ -14,18 +14,18 @@ NAME = $(shell xmlstarlet sel -t -v "/plugin/name" plugin.xml)
 
 LDFLAGS += -lcsound64
 
-$(shell xsltproc ../templates/DistrhoPluginInfo.h.xsl ./plugin.xml >  ./DistrhoPluginInfo.h)	
+$(shell xsltproc ../../src/templates/DistrhoPluginInfo.h.xsl ./plugin.xml >  ./DistrhoPluginInfo.h)	
 
 # --------------------------------------------------------------
 # Files to build
 .PHONY: PluginCsound.out.cpp
 PluginCsound.out.cpp:
-	$(shell xsltproc ../templates/PluginCsound.cpp.xsl ./plugin.xml >  ./PluginCsound-temp.out.cpp)
-	$(shell xsltproc ../templates/PluginCsound.hpp.xsl ./plugin.xml >  ./PluginCsound.out.hpp)
+	$(shell xsltproc ../../src/templates/PluginCsound.cpp.xsl ./plugin.xml >  ./PluginCsound-temp.out.cpp)
+	$(shell xsltproc ../../src/templates/PluginCsound.hpp.xsl ./plugin.xml >  ./PluginCsound.out.hpp)
 	$(call generate_plugin_csound, ./orc.csd, PluginCsound-temp.out.cpp, ./PluginCsound.out.cpp) 
 
 OBJS_DSP = \
-	../csound-session/CsoundSession.cpp.o \
+	../../src/csound-session/CsoundSession.cpp.o \
 	PluginCsound.out.cpp.o
 
 # --------------------------------------------------------------

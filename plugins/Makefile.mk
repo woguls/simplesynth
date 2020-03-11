@@ -28,7 +28,7 @@ endef
 TARGET_DIR = ../../bin
 
 BUILD_C_FLAGS   += -I.
-BUILD_CXX_FLAGS += -I. -I../../dpf/distrho -I../../dpf/dgl -I../../plugins/csound-session
+BUILD_CXX_FLAGS += -I. -I../../dpf/distrho -I../../dpf/dgl -I../../src/csound-session
 
 ifeq ($(HAVE_DGL),true)
 BASE_FLAGS += -DHAVE_DGL

@@ -15,8 +15,10 @@ ifeq ($(HAVE_DGL),true)
 	$(MAKE) -C dpf/dgl
 endif
 
+DIRECTORY = $(sort $(dir $(wildcard plugins/*/.)))
+
 plugins: libs
-	$(MAKE) all -C plugins/SimpleSynth
+	@for f in $(DIRECTORY); do $(MAKE) all -C $${f}; done
 
 gen: plugins dpf/utils/lv2_ttl_generator
 	@$(CURDIR)/dpf/utils/generate-ttl.sh
