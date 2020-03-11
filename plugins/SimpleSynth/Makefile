@@ -14,12 +14,19 @@ NAME = simplesynth
 
 LDFLAGS += -lcsound64
 
+$(shell xsltproc ../templates/DistrhoPluginInfo.h.xsl ./plugin.xml >  ./DistrhoPluginInfo.h)	
+
 # --------------------------------------------------------------
 # Files to build
+.PHONY: PluginCsound.out.cpp
+PluginCsound.out.cpp:
+	$(shell xsltproc ../templates/PluginCsound.cpp.xsl ./plugin.xml >  ./PluginCsound-temp.out.cpp)
+	$(shell xsltproc ../templates/PluginCsound.hpp.xsl ./plugin.xml >  ./PluginCsound.out.hpp)
+	$(call generate_plugin_csound, ./orc.csd, PluginCsound-temp.out.cpp, ./PluginCsound.out.cpp) 
 
 OBJS_DSP = \
 	CsoundSession.cpp.o \
-	PluginCsound.cpp.o
+	PluginCsound.out.cpp.o
 
 # --------------------------------------------------------------
 # Do some magic
@@ -38,5 +45,7 @@ TARGETS += lv2_dsp
 TARGETS += vst
 
 all: $(TARGETS)
+	
+	
 
 # --------------------------------------------------------------

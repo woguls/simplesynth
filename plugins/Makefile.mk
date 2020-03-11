@@ -13,6 +13,13 @@ HAVE_DGL = false
 endif
 
 # --------------------------------------------------------------
+# Macros
+define generate_plugin_csound
+	$(eval ORC := $(shell xxd -i < $(1) ))
+    sed "s/{ORC_TEXT}/$(ORC)/" $(2) >$(3)
+endef
+
+# --------------------------------------------------------------
 # Basic setup
 
 TARGET_DIR = ../../bin
@@ -79,7 +86,7 @@ all:
 	$(CXX) $< $(BUILD_CXX_FLAGS) -MD -MP -c -o $@
 
 clean:
-	rm -f *.d *.o
+	rm -f *.d *.o *.out.cpp *.out.hpp DistrhoPluginInfo.h
 	rm -rf $(TARGET_DIR)/$(NAME) $(TARGET_DIR)/$(NAME)-* $(TARGET_DIR)/$(NAME).lv2/
 
 # --------------------------------------------------------------
