@@ -4,7 +4,7 @@ A simple way to make lv2 plugins with csound
 
 This project uses this [distrho plugin framework](https://github.com/DISTRHO/DPF/)
 
-Build instructions and a better explanation of what the code does can be found [here](https://github.com/osamc-lv2-workshop/lv2-workshop)
+Build instructions and a better explanation of what the code does can be found [here](https://github.com/osamc-lv2-workshop/lv2-workshop). Possible additional requirements may include [xmlstarlet](http://xmlstar.sourceforge.net/), [xxd](https://linux.die.net/man/1/xxd) and of course [csound](https://github.com/csound/csound)
 
 ## Basic Idea
 
