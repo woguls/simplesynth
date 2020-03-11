@@ -14,6 +14,9 @@ endif
 
 # --------------------------------------------------------------
 # Macros
+#
+
+# used xxd to embed orc.csd in the source code as const char*s
 define generate_plugin_csound
 	$(eval ORC := $(shell xxd -i < $(1) ))
     sed "s/{ORC_TEXT}/$(ORC)/" $(2) >$(3)
