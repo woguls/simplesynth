@@ -16,8 +16,8 @@ To make a new plugin:
 
 duplicate `plugins/SimpleSynth` to a new directory of your choosing, for instance `plugins/BetterSimpleSynth`
 
-edit `orc.csd` and `plugin.xml`
+edit `plugins/BetterSimpleSynth/orc.csd` and `plugins/BetterSimpleSynth/plugin.xml`
 
-run `make` from the root dir of simplesynth
+run `make` from the root dir of the repo
 
 copy or link the resulting `.lv2` directory in `bin` to your lv2 plugins directory
