@@ -7,7 +7,7 @@
 # --------------------------------------------------------------
 # Project name, used for binaries
 
-NAME = simplesynth
+NAME = $(shell xmlstarlet sel -t -v "/plugin/name" plugin.xml)
 
 # --------------------------------------------------------------
 # Use the csound api
@@ -25,7 +25,7 @@ PluginCsound.out.cpp:
 	$(call generate_plugin_csound, ./orc.csd, PluginCsound-temp.out.cpp, ./PluginCsound.out.cpp) 
 
 OBJS_DSP = \
-	CsoundSession.cpp.o \
+	../csound-session/CsoundSession.cpp.o \
 	PluginCsound.out.cpp.o
 
 # --------------------------------------------------------------
