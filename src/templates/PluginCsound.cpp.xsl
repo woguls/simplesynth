@@ -179,7 +179,9 @@ void Plugincsoundlv2::run(const float** inputs, float** outputs,
     
     for(int p=0; p&lt;pcount; p++) {
         if (paramShouldSend[p]) {
-            cs-&gt;SetChannel( params[p]-&gt;symbol, fParams[p]);
+            cs-&gt;SetChannel( params[p]-&gt;symbol.buffer(), fParams[p]);
+            paramShouldSend[p] = false;
+            printf(&quot;sending %s = %f\n&quot;, params[p]-&gt;symbol.buffer(), fParams[p]);
             paramShouldSend[p] = false;
         }
     }

@@ -1,0 +1,68 @@
+<plugin>
+	<name>add1</name>
+	<label>add1</label>
+	<description>additive synthesis trial</description>
+	<maker>David DeWert</maker>
+	<homepage>https://github.com/woguls/simplesynth/tree/csound/add1</homepage>
+	<license>https://spdx.org/licenses/MIT</license>
+	<version>
+		<major>0</major>
+		<minor>1</minor>
+		<patch>0</patch>
+	</version>
+	<distrho>
+		<brand>woguls</brand>
+		<name>add1</name>
+		<uri>https://github.com/woguls/simplesynth/tree/csound/add1</uri>
+	</distrho>
+	<parameter>
+		<name>voices</name>
+		<symbol>voices</symbol>
+		<min>1</min>
+		<max>30</max>
+		<def>1</def>
+		<hint>kParameterIsAutomable</hint>
+	</parameter>
+
+	<parameter>
+		<name>speedmod</name>
+		<symbol>speedmod</symbol>
+		<min>1</min>
+		<max>127</max>
+		<def>1</def>
+		<hint>kParameterIsAutomable</hint>
+	</parameter>
+	<parameter>
+		<name>depthpow</name>
+		<symbol>depthpow</symbol>
+		<min>0.8f</min>
+		<max>2.0f</max>
+		<def>0.8f</def>
+		<hint>kParameterIsAutomable</hint>
+	</parameter>
+	<parameter>
+		<name>freqpow</name>
+		<symbol>freqpow</symbol>
+		<min>1.0f</min>
+		<max>3.0f</max>
+		<def>1.0f</def>
+		<hint>kParameterIsAutomable</hint>
+	</parameter>
+	<parameter>
+		<name>lfoscale</name>
+		<symbol>lfoscale</symbol>
+		<min>0.006f</min>
+		<max>0.06f</max>
+		<def>0.006f</def>
+		<hint>kParameterIsAutomable</hint>
+	</parameter>
+	<parameter>
+		<name>volume</name>
+		<symbol>volume</symbol>
+		<min>0.0f</min>
+		<max>1.0f</max>
+		<def>0.4f</def>
+		<hint>kParameterIsAutomable</hint>
+	</parameter>
+
+</plugin>
