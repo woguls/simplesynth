@@ -31,6 +31,7 @@ int CsoundSession::Init(int framerate, int buffersize) {
 	SetOption("-d");
 	if (CompileOrc(m_orc) == 0) {
 		Start();
+		m_processedFrames = GetKsmps();
 	}
 	else {
 	  return 1;

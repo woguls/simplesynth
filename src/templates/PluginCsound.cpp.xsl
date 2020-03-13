@@ -34,6 +34,8 @@
 
 #include &quot;PluginCsound.out.hpp&quot;
 
+#include &lt;time.h&gt;
+
 START_NAMESPACE_DISTRHO
 
 const char orc1[] = { {ORC_TEXT} , 0x00 };
@@ -147,6 +149,7 @@ void Plugincsoundlv2::loadProgram(uint32_t index) {
     if (index &lt; presetCount) {
         for (int i=0; i &lt; paramCount; i++) {
             setParameterValue(i, factoryPresets[index].params[i]);
+            // cs-&gt;SetChannel( params[i]-&gt;symbol.buffer(), fParams[i]);
             paramShouldSend[i] = true;
         }
     }
@@ -162,7 +165,8 @@ void Plugincsoundlv2::activate() {
     ksmps = cs-&gt;GetKsmps();
     processedFrames = ksmps;
     for (int i=0; i &lt; paramCount; i++) {
-        paramShouldSend[i] = true;
+        paramShouldSend[i] = false;
+        cs-&gt;SetChannel( params[i]-&gt;symbol.buffer(), fParams[i]);
     }
 }
 
@@ -174,26 +178,38 @@ void Plugincsoundlv2::run(const float** inputs, float** outputs,
 
     uint8_t note, velo;
 
+    clock_t clk = clock();
+
     // this is probably unnecessary but should ensure the compiler will unroll the loop. Which is itself probably not necessary...
     constexpr int pcount = paramCount;
     
+    if(midiEventCount &gt; 0) {
+        printf(&quot;%d: frames: %i, midi events: %i\n&quot;, clock()-clk, frames, midiEventCount);
+
+    }
+
     for(int p=0; p&lt;pcount; p++) {
         if (paramShouldSend[p]) {
             cs-&gt;SetChannel( params[p]-&gt;symbol.buffer(), fParams[p]);
             paramShouldSend[p] = false;
-            printf(&quot;sending %s = %f\n&quot;, params[p]-&gt;symbol.buffer(), fParams[p]);
-            paramShouldSend[p] = false;
+            printf(&quot;%d: sending %s = %f\n&quot;, clock()-clk, params[p]-&gt;symbol.buffer(), fParams[p]);
         }
     }
 
+    // this is the number of audio samples copied from csound
+    int audioSamples = 0;
+
     for (uint32_t count, pos=0, curEventIndex=0; pos&lt;frames;) {
+
         for (;curEventIndex &lt; midiEventCount &amp;&amp; pos &gt;= midiEvents[curEventIndex].frame; ++curEventIndex) {
+
+            // discard an event if its size &gt; 4
             if (midiEvents[curEventIndex].size &gt; MidiEvent::kDataSize)
                 continue;
 
+            // handle a single event
             const uint8_t* data = midiEvents[curEventIndex].data;
             const uint8_t status = data[0] &amp; 0xF0;
-
             switch (status) {
                 case 0x90: // note on
                     note = data[1];
@@ -241,20 +257,15 @@ void Plugincsoundlv2::run(const float** inputs, float** outputs,
         else
             count = frames - pos;
 
-        for (uint32_t i=0; i&lt;count; ++i, processedFrames++) {
-            if ( processedFrames == ksmps &amp;&amp; result == 0) {
-                result = cs-&gt;PerformKsmps();
-                processedFrames = 0;
-            }
-            for (int j = 0; j &lt; DISTRHO_PLUGIN_NUM_OUTPUTS; j++) {
-                if ( result == 0) {
-                    MYFLT out = cs-&gt;GetSpoutSample(processedFrames,j);
-                    outputs[j][i] = float( out / scale);
-                }
-            }
-        }
         pos += count;
+        for (; audioSamples &lt; pos; audioSamples++ ) {
+            cs-&gt;Run&lt;DISTRHO_PLUGIN_NUM_OUTPUTS&gt;(audioSamples, outputs);
+        }
     }
+    for (; audioSamples &lt; frames; audioSamples++ ) {
+        cs-&gt;Run&lt;DISTRHO_PLUGIN_NUM_OUTPUTS&gt;(audioSamples, outputs);
+    }
+
 }
 
 // -----------------------------------------------------------------------
