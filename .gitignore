@@ -15,3 +15,7 @@
 bin/*-dssi/
 bin/*.lv2/
 bin/d_*
+
+plugins/*
+!plugins/Makefile*
+!plugins/SimpleSynth
