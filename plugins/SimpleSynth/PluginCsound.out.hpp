@@ -1,17 +1,14 @@
-<xsl:stylesheet version="1.0"
-    xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
-<xsl:output method="text" omit-xml-declaration="yes" indent="no"/>
-<xsl:template match="/">
+
 
 /*
  * csoundlv2 audio effect based on DISTRHO Plugin Framework (DPF)
  *
  * SPDX-License-Identifier: MIT
  *
- * Copyright (C) 2020 David DeWert &lt;daviddewert@gmail.com&gt;
+ * Copyright (C) 2020 David DeWert <daviddewert@gmail.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the &quot;Software&quot;), to
+ * of this software and associated documentation files (the "Software"), to
  * deal in the Software without restriction, including without limitation the
  * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
  * sell copies of the Software, and to permit persons to whom the Software is
@@ -20,7 +17,7 @@
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
  *
- * THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
  * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
@@ -32,8 +29,8 @@
 #ifndef PLUGIN_CSOUNDLV2_H
 #define PLUGIN_CSOUNDLV2_H
 
-#include &quot;DistrhoPlugin.hpp&quot;
-#include &quot;CsoundSession.hpp&quot;
+#include "DistrhoPlugin.hpp"
+#include "CsoundSession.hpp"
 
 START_NAMESPACE_DISTRHO
 
@@ -43,18 +40,9 @@ class Plugincsoundlv2 : public Plugin {
 public:
     // Dummy list of params for future reference. paramFreq is not used by this plugin
     enum Parameters {
-    <xsl:for-each select="/plugin/parameter">
-        <xsl:choose>
-
-        <xsl:when test="position() = 1">
-            <xsl:value-of select="symbol"/>=0,
-        </xsl:when>
-        <xsl:otherwise>
-            <xsl:value-of select="symbol"/>,
-        </xsl:otherwise>
-
-        </xsl:choose>
-    </xsl:for-each>
+    paramFrequency=0,
+        paramVolume,
+        
         paramCount
     };
 
@@ -66,27 +54,27 @@ protected:
     // Information
 
     const char* getLabel() const noexcept override {
-        return &quot;<xsl:value-of select="/plugin/label"/>&quot;;
+        return "csound-simplesynth";
     }
 
     const char* getDescription() const override {
-        return &quot;<xsl:value-of select="/plugin/description"/>&quot;;
+        return "a simple synth made with csound";
     }
 
     const char* getMaker() const noexcept override {
-        return &quot;<xsl:value-of select="/plugin/maker"/>&quot;;
+        return "David DeWert";
     }
 
     const char* getHomePage() const override {
-        return &quot;<xsl:value-of select="/plugin/homepage"/>&quot;;
+        return "https://github.com/woguls/simplesynth/tree/csound";
     }
 
     const char* getLicense() const noexcept override {
-        return &quot;<xsl:value-of select="/plugin/license"/>&quot;;
+        return "https://spdx.org/licenses/MIT";
     }
 
     uint32_t getVersion() const noexcept override {
-        return d_version(<xsl:value-of select="/plugin/version/major"/>, <xsl:value-of select="/plugin/version/minor"/>,<xsl:value-of select="/plugin/version/patch"/>);
+        return d_version(0, 1,0);
     }
 
     // Go to:
@@ -95,15 +83,15 @@ protected:
     //
     // Get a proper plugin UID and fill it in here!
     int64_t getUniqueId() const noexcept override {
-        return d_cconst(&apos;a&apos;, &apos;b&apos;, &apos;c&apos;, &apos;d&apos;);
+        return d_cconst('a', 'b', 'c', 'd');
     }
 
     // -------------------------------------------------------------------
     // Init
 
     void initParameterList();
-    void initParameter(uint32_t index, Parameter&amp; parameter) override;
-    void initProgramName(uint32_t index, String&amp; programName) override;
+    void initParameter(uint32_t index, Parameter& parameter) override;
+    void initProgramName(uint32_t index, String& programName) override;
 
     // -------------------------------------------------------------------
     // Internal data
@@ -155,15 +143,17 @@ struct Preset {
 };
 
 const Preset factoryPresets[] = {
-    <xsl:for-each select="/plugin/parameter">
+    
     {
-        &quot;Default&quot;,
-        {<xsl:value-of select="def"/>}
+        "Default",
+        {440.1f}
     }
-        <xsl:if test="position() != last()">
-             <xsl:text>,</xsl:text>
-        </xsl:if>
-    </xsl:for-each>
+        ,
+    {
+        "Default",
+        {0.5f}
+    }
+        
 };
 
 const uint presetCount = sizeof(factoryPresets) / sizeof(Preset);
@@ -173,5 +163,3 @@ const uint presetCount = sizeof(factoryPresets) / sizeof(Preset);
 END_NAMESPACE_DISTRHO
 
 #endif  // #ifndef PLUGIN_CSOUNDLV2_H
-</xsl:template>
-</xsl:stylesheet>

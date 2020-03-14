@@ -4,7 +4,7 @@ START_NAMESPACE_DISTRHO
 
 
 
-void noMessageCallback(CSOUND* cs, int attr, const char *format, va_list valist)
+void noMessageCallback(CSOUND*, int, const char *format, va_list valist)
 {
   // Do nothing so that Csound will not print any message,
   // leaving a clean console for our app
