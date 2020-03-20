@@ -12,6 +12,7 @@ void noMessageCallback(CSOUND*, int, const char *format, va_list valist)
   return;
 }
 
+
 int CsoundSession::Init(int framerate, int buffersize) {
 
 	SetMessageCallback(noMessageCallback);
@@ -21,9 +22,10 @@ int CsoundSession::Init(int framerate, int buffersize) {
 	m_csParams.control_rate_override = framerate/buffersize;
 	m_csParams.e0dbfs_override = 1.0;
 	m_csParams.nchnls_override = DISTRHO_PLUGIN_NUM_OUTPUTS;
+	m_csParams.nchnls_i_override = DISTRHO_PLUGIN_NUM_INPUTS;
 	m_csParams.debug_mode = 0;
 	m_csParams.realtime_mode = 1;
-	m_csParams.sample_accurate = 1;
+
 
 	// Note that setParams is called before first compilation
 	SetParams(&m_csParams);
@@ -37,6 +39,8 @@ int CsoundSession::Init(int framerate, int buffersize) {
 	  return 1;
 	}
 	
+	m_spout = GetSpout();
+  	m_spin  = GetSpin();
 	return 0;
 }
 

@@ -16,6 +16,9 @@
 		<uri>https://github.com/woguls/simplesynth/tree/csound</uri>
 		<outputs>1</outputs>
 		<inputs>0</inputs>
+		<synth>1</synth>
+		<midiinput>1</midiinput>
+		<midioutput>0</midioutput>
 	</distrho>
 	<parameter>
 		<name>Frequency</name>

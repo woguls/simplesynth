@@ -32,7 +32,7 @@
 
 #include &lt;math.h&gt;
 
-#include &quot;PluginCsound.out.hpp&quot;
+#include &quot;PluginCsound.hpp&quot;
 
 #include &lt;time.h&gt;
 
@@ -51,6 +51,9 @@ Plugincsoundlv2::Plugincsoundlv2()
     }
 
     initParameterList();
+
+    sampleRateChanged(getSampleRate());
+
 
     if (presetCount &gt; 0) {
         loadProgram(0);
@@ -172,11 +175,16 @@ void Plugincsoundlv2::activate() {
 
 
 
-void Plugincsoundlv2::run(const float** , float** outputs,
-                          uint32_t frames,
-                          const MidiEvent* midiEvents, uint32_t midiEventCount) {
+void Plugincsoundlv2::run(
+        const float** inputs,
+        float** outputs,
+        uint32_t frames
+        <xsl:if test="(/plugin/distrho/midiinput &gt; 0) or (/plugin/distrho/midioutput &gt; 0)">
+            <xsl:text>,const MidiEvent* midiEvents,
+            uint32_t midiEventCount</xsl:text>
+        </xsl:if>
+) {
 
-    uint8_t note, velo;
 
     // this is probably unnecessary but should ensure the compiler will unroll the loop. Which is itself probably not necessary...
     constexpr int pcount = paramCount;
@@ -192,6 +200,10 @@ void Plugincsoundlv2::run(const float** , float** outputs,
     // this is the number of audio samples copied from csound
     uint32_t audioSamples = 0;
 
+
+    <xsl:if test="/plugin/distrho/midiinput != 0">
+    <xsl:text>
+    uint8_t note, velo;
     for (uint32_t count, pos=0, curEventIndex=0; pos&lt;frames;) {
 
         for (;curEventIndex &lt; midiEventCount &amp;&amp; pos &gt;= midiEvents[curEventIndex].frame; ++curEventIndex) {
@@ -252,11 +264,26 @@ void Plugincsoundlv2::run(const float** , float** outputs,
 
         pos += count;
         for (; audioSamples &lt; pos; audioSamples++ ) {
-            cs-&gt;Run&lt;DISTRHO_PLUGIN_NUM_OUTPUTS&gt;(audioSamples, outputs);
+            cs-&gt;Run&lt;DISTRHO_PLUGIN_NUM_INPUTS,DISTRHO_PLUGIN_NUM_OUTPUTS&gt;(audioSamples, inputs, outputs);
         }
     }
+    </xsl:text>
+    </xsl:if>
     for (; audioSamples &lt; frames; audioSamples++ ) {
-        cs-&gt;Run&lt;DISTRHO_PLUGIN_NUM_OUTPUTS&gt;(audioSamples, outputs);
+        cs-&gt;Run&lt;DISTRHO_PLUGIN_NUM_INPUTS,DISTRHO_PLUGIN_NUM_OUTPUTS&gt;(audioSamples,
+        <xsl:if test="/plugin/distrho/inputs != 0">
+            <xsl:text>inputs</xsl:text>
+        </xsl:if>
+        <xsl:if test="/plugin/distrho/inputs = 0">
+            <xsl:text>nullptr</xsl:text>
+        </xsl:if>
+        <xsl:if test="/plugin/distrho/outputs != 0">
+            <xsl:text>,outputs</xsl:text>
+        </xsl:if>
+        <xsl:if test="/plugin/distrho/outputs = 0">
+            <xsl:text>,nullptr</xsl:text>
+        </xsl:if>
+        );
     }
 
 }

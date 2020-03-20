@@ -95,7 +95,7 @@ protected:
     //
     // Get a proper plugin UID and fill it in here!
     int64_t getUniqueId() const noexcept override {
-        return d_cconst(&apos;a&apos;, &apos;b&apos;, &apos;c&apos;, &apos;d&apos;);
+        return d_cconst(&apos;z&apos;, &apos;b&apos;, &apos;c&apos;, &apos;d&apos;);
     }
 
     // -------------------------------------------------------------------
@@ -123,8 +123,15 @@ protected:
 
     void activate() override;
 
-    void run(const float**, float** outputs, uint32_t frames,
-             const MidiEvent* midiEvents, uint32_t midiEventCount) override;
+    void run(
+        const float**,
+        float** outputs,
+        uint32_t frames
+        <xsl:if test="(/plugin/distrho/midiinput &gt; 0) or (/plugin/distrho/midioutput &gt; 0)">
+            <xsl:text>,const MidiEvent* midiEvents,
+            uint32_t midiEventCount</xsl:text>
+        </xsl:if>
+    ) override;
 
 
     // -------------------------------------------------------------------
@@ -155,15 +162,18 @@ struct Preset {
 };
 
 const Preset factoryPresets[] = {
-    <xsl:for-each select="/plugin/parameter">
     {
         &quot;Default&quot;,
-        {<xsl:value-of select="def"/>}
-    }
+        {
+        <xsl:for-each select="/plugin/parameter">
+
+        <xsl:value-of select="def"/>
         <xsl:if test="position() != last()">
              <xsl:text>,</xsl:text>
         </xsl:if>
     </xsl:for-each>
+        }
+    }
 };
 
 const uint presetCount = sizeof(factoryPresets) / sizeof(Preset);
