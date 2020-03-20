@@ -264,13 +264,13 @@ void Plugincsoundlv2::run(
 
         pos += count;
         for (; audioSamples &lt; pos; audioSamples++ ) {
-            cs-&gt;Run&lt;DISTRHO_PLUGIN_NUM_INPUTS,DISTRHO_PLUGIN_NUM_OUTPUTS&gt;(audioSamples, inputs, outputs);
+            cs-&gt;Run(audioSamples, inputs, outputs);
         }
     }
     </xsl:text>
     </xsl:if>
     for (; audioSamples &lt; frames; audioSamples++ ) {
-        cs-&gt;Run&lt;DISTRHO_PLUGIN_NUM_INPUTS,DISTRHO_PLUGIN_NUM_OUTPUTS&gt;(audioSamples,
+        cs-&gt;Run(audioSamples,
         <xsl:if test="/plugin/distrho/inputs != 0">
             <xsl:text>inputs</xsl:text>
         </xsl:if>

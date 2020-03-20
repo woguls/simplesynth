@@ -17,7 +17,6 @@ public:
 
     int Init(int framerate, int buffersize);
 
-    template<uint8_t ICHAN, uint8_t OCHAN>
     void Run(uint32_t pos, const float** in, float** out) {
 
     	if (m_processedFrames == GetKsmps() ) {
@@ -26,12 +25,12 @@ public:
     	}
 
           // outp[j][i] = (LADSPA_Data) (spout[j+pos]/scale);
-    	for (uint8_t j = 0; j < OCHAN; j++) {
+    	for (uint8_t j = 0; j < DISTRHO_PLUGIN_NUM_OUTPUTS; j++) {
             const MYFLT sample = GetSpoutSample(m_processedFrames, j);
             out[j][pos] = float(sample / Get0dBFS());
     	}
-    	for (uint8_t j = 0; j < ICHAN; j++) {
-            uint8_t offset = m_processedFrames * ICHAN;
+    	for (uint8_t j = 0; j < DISTRHO_PLUGIN_NUM_INPUTS; j++) {
+            uint8_t offset = m_processedFrames * DISTRHO_PLUGIN_NUM_INPUTS;
             m_spin[j + offset] = in[j][pos] * Get0dBFS();
             // AddSpinSample(m_processedFrames, j, MYFLT( in[j][pos])*Get0dBFS());
     	}
