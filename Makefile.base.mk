@@ -129,7 +129,7 @@ endif
 # Set build and link flags
 
 BASE_FLAGS = -Wall -Wextra -pipe -MD -MP
-BASE_OPTS  = -O3 -ffast-math -fdata-sections -ffunction-sections
+BASE_OPTS  = -O3 -ffast-math -fdata-sections -ffunction-sections -fopt-info-vec-missed
 
 ifeq ($(CPU_I386_OR_X86_64),true)
 BASE_OPTS += -mtune=generic -msse -msse2
