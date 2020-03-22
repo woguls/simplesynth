@@ -12,7 +12,7 @@ void noMessageCallback(CSOUND*, int, const char *format, va_list valist)
   return;
 }
 
-CsoundSession::CsoundSession(const char* orc, int framerate, int buffersize) : Csound() {
+CsoundSession::CsoundSession(const char* orc, double framerate, uint32_t buffersize) : Csound() {
 	m_orc = orc;
     SetMessageCallback(noMessageCallback);
     GetParams(&m_csParams);
@@ -48,29 +48,25 @@ CsoundSession::CsoundSession(const char* orc, int framerate, int buffersize) : C
 // -----------------------------------------------------------------------
 // CopyBuffers
 // low, high: sample numbers relative to the Distrho buffers.
-void CsoundSession::CopyBuffers(uint32_t low, uint32_t high, const float** in, float** out) {
+void CsoundSession::CopyBuffers(const uint32_t low, const uint32_t high, const float** in, float** out) {
+	for (uint32_t frame = low; frame < high; frame++, m_processedFrames++) {
+		if (m_processedFrames == m_ksmps ) {
+			PerformKsmps();
+			m_processedFrames = 0;
+		}
 
+		for (uint32_t j = 0; j < DISTRHO_PLUGIN_NUM_OUTPUTS; j++) {
+			const uint32_t offset = m_processedFrames * DISTRHO_PLUGIN_NUM_OUTPUTS;
+	        out[j][frame] = float(m_spout[j + offset] / m_0dBFS);
+		}
+
+		for (uint32_t j = 0; j < DISTRHO_PLUGIN_NUM_INPUTS; j++) {
+	        const uint32_t offset = m_processedFrames * DISTRHO_PLUGIN_NUM_INPUTS;
+	        m_spin[j + offset] = in[j][frame] * m_0dBFS;
+		}
+	}
 }
 
-void CsoundSession::Run(uint32_t pos, const float** in, float** out) {
-
-	if (m_processedFrames == m_ksmps ) {
-		PerformKsmps();
-		m_processedFrames = 0;
-	}
-
-      // outp[j][i] = (LADSPA_Data) (spout[j+pos]/scale);
-	for (uint8_t j = 0; j < DISTRHO_PLUGIN_NUM_OUTPUTS; j++) {
-        const MYFLT sample = GetSpoutSample(m_processedFrames, j);
-        out[j][pos] = float(sample / m_0dBFS);
-	}
-	for (uint8_t j = 0; j < DISTRHO_PLUGIN_NUM_INPUTS; j++) {
-        uint8_t offset = m_processedFrames * DISTRHO_PLUGIN_NUM_INPUTS;
-        m_spin[j + offset] = in[j][pos] * m_0dBFS;
-        // AddSpinSample(m_processedFrames, j, MYFLT( in[j][pos])*Get0dBFS());
-	}
-	m_processedFrames++;
-}
 
 
 

@@ -260,28 +260,13 @@ void Plugincsoundlv2::run(
             count = frames - pos;
 
         pos += count;
-        for (; audioSamples &lt; pos; audioSamples++ ) {
-            cs-&gt;Run(audioSamples, inputs, outputs);
-        }
+        cs-&gt;CopyBuffers(audioSamples, pos, inputs, outputs);
+        audioSamples += pos;
     }
     </xsl:text>
     </xsl:if>
-    for (; audioSamples &lt; frames; audioSamples++ ) {
-        cs-&gt;Run(audioSamples,
-        <xsl:if test="/plugin/distrho/inputs != 0">
-            <xsl:text>inputs</xsl:text>
-        </xsl:if>
-        <xsl:if test="/plugin/distrho/inputs = 0">
-            <xsl:text>nullptr</xsl:text>
-        </xsl:if>
-        <xsl:if test="/plugin/distrho/outputs != 0">
-            <xsl:text>,outputs</xsl:text>
-        </xsl:if>
-        <xsl:if test="/plugin/distrho/outputs = 0">
-            <xsl:text>,nullptr</xsl:text>
-        </xsl:if>
-        );
-    }
+    cs-&gt;CopyBuffers(audioSamples, frames, inputs, outputs);
+
 
 }
 
