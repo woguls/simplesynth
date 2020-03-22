@@ -7,22 +7,35 @@
 
 START_NAMESPACE_DISTRHO
 
+class AudioBuffers
+{
+public:
+    AudioBuffers(const MYFLT zdbfs, const uint32_t ksmps, MYFLT* spin, MYFLT* spout, CSOUND * const csound);
+    void Copy(const uint32_t low, const uint32_t high, const float** const in, float** const out);
+
+private:
+    const MYFLT m_0dBFS;
+    MYFLT * const m_spin;
+    MYFLT * const m_spout;
+    const uint32_t m_ksmps;
+    uint32_t m_processedFrames;
+    CSOUND * const m_csound;
+};
+
 
 class CsoundSession : public Csound
 {
 public:	
-	CsoundSession(const char* orc, double framerate, uint32_t buffersize);
+	CsoundSession(const char* orc, const double framerate, const uint32_t buffersize);
 
     void CopyBuffers(uint32_t low, uint32_t high, const float** in, float** out);
 private:
 	CSOUND_PARAMS m_csParams;
 	String m_orc;
-	uint32_t m_processedFrames;
     int m_result;
-    uint32_t m_ksmps;
-    MYFLT *m_spin, *m_spout;
-    MYFLT m_0dBFS;
+    AudioBuffers* buffers;
 };
+
 
 END_NAMESPACE_DISTRHO
 #endif

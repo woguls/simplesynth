@@ -32,26 +32,37 @@ CsoundSession::CsoundSession(const char* orc, double framerate, uint32_t buffers
     SetOption("-d");
     if (CompileOrc(m_orc) == 0) {
         Start();
-        m_ksmps = GetKsmps();
-        m_processedFrames = m_ksmps;
     }
     else {
       m_result = 1;
       return;
     }
     
-    m_spout = GetSpout();
-    m_spin  = GetSpin();
     m_result =  0;
-    m_0dBFS = Get0dBFS();
+
+    buffers = new AudioBuffers(Get0dBFS(), GetKsmps(), GetSpin(), GetSpout(), GetCsound());
 };
 // -----------------------------------------------------------------------
 // CopyBuffers
 // low, high: sample numbers relative to the Distrho buffers.
 void CsoundSession::CopyBuffers(const uint32_t low, const uint32_t high, const float** in, float** out) {
+
+	buffers->Copy(low, high, in, out);
+}
+
+AudioBuffers::AudioBuffers(const MYFLT zdbfs, const uint32_t ksmps, MYFLT* spin, MYFLT* spout, CSOUND * const csound) :
+        m_0dBFS{zdbfs},
+        m_ksmps{ksmps},
+        m_spin{spin},
+        m_spout{spout},
+        m_processedFrames{ksmps},
+        m_csound{csound}
+        {}
+
+void AudioBuffers::Copy(const uint32_t low, const uint32_t high, const float** const in, float** const out) {
 	for (uint32_t frame = low; frame < high; frame++, m_processedFrames++) {
 		if (m_processedFrames == m_ksmps ) {
-			PerformKsmps();
+			csoundPerformKsmps(m_csound);
 			m_processedFrames = 0;
 		}
 
@@ -65,10 +76,7 @@ void CsoundSession::CopyBuffers(const uint32_t low, const uint32_t high, const f
 	        m_spin[j + offset] = in[j][frame] * m_0dBFS;
 		}
 	}
+
 }
-
-
-
-
 
 END_NAMESPACE_DISTRHO
