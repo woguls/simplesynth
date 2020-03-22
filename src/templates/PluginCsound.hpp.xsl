@@ -140,10 +140,9 @@ private:
 
     float    fParams[paramCount];
     double   fSampleRate;
-    int      processedFrames;
     int      result;
-    int      ksmps;
-    MYFLT    scale;
+    // int      ksmps;
+    // MYFLT    scale;
     bool noteState[128];
 
     // params[] contains a list of the parameters

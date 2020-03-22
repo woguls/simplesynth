@@ -59,7 +59,7 @@ Plugincsoundlv2::Plugincsoundlv2()
         loadProgram(0);
     }
 
-    cs = new CsoundSession{orc1};
+    cs = new CsoundSession{orc1, getSampleRate() , getBufferSize()};
 }
 
 Plugincsoundlv2::~Plugincsoundlv2() {
@@ -163,10 +163,7 @@ void Plugincsoundlv2::loadProgram(uint32_t index) {
 
 void Plugincsoundlv2::activate() {
     // plugin is activated
-    result = cs-&gt;Init(getSampleRate(), getBufferSize());
-    scale = cs-&gt;Get0dBFS();
-    ksmps = cs-&gt;GetKsmps();
-    processedFrames = ksmps;
+    
     for (int i=0; i &lt; paramCount; i++) {
         paramShouldSend[i] = false;
         cs-&gt;SetChannel( params[i]-&gt;symbol.buffer(), fParams[i]);
