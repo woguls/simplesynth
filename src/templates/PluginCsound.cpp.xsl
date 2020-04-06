@@ -81,8 +81,8 @@ void Plugincsoundlv2::initParameter(uint32_t index, Parameter&amp; parameter) {
     switch (index) {
 <xsl:for-each select="/plugin/parameter">
         case <xsl:value-of select="symbol"/>:
-            parameter.name = &quot;<xsl:value-of select="name"/>&quot;;
-            parameter.symbol = &quot;<xsl:value-of select="symbol"/>&quot;;
+            parameter.name = "<xsl:value-of select="name"/>";
+            parameter.symbol = "<xsl:value-of select="symbol"/>";
             parameter.ranges.min = <xsl:value-of select="min"/>;
             parameter.ranges.max = <xsl:value-of select="max"/>;
             parameter.ranges.def = <xsl:value-of select="def"/>;
@@ -97,7 +97,7 @@ void Plugincsoundlv2::initParameter(uint32_t index, Parameter&amp; parameter) {
 }
 
 /**
-  We need a convenient place to get the parameter symbols for use with csound&apos;s chanset
+  We need a convenient place to get the parameter symbols for use with csound&#039;s chanset
 */
 void Plugincsoundlv2::initParameterList() {
     int paramindex;
@@ -170,13 +170,48 @@ void Plugincsoundlv2::activate() {
     }
 }
 
-
-
 void Plugincsoundlv2::run(
         const float** inputs,
         float** outputs,
         uint32_t frames
-        <xsl:if test="(/plugin/distrho/midiinput &gt; 0) or (/plugin/distrho/midioutput &gt; 0)">
+        <xsl:if test="(/plugin/distrho/midiinput > 0) or (/plugin/distrho/midioutput > 0)">
+            <xsl:text>,const MidiEvent* midiEvents,
+            uint32_t midiEventCount</xsl:text>
+        </xsl:if>
+) {
+
+    // 
+    uint32_t samplesMin = 0;
+
+    <xsl:if test="(/plugin/distrho/midiinput > 0) or (/plugin/distrho/midioutput > 0)">
+        <xsl:text>
+
+    cs-&gt;SetMidiIndexStart(0);
+    cs-&gt;SetMidiIndexEnd(0);
+    cs-&gt;SetMidiEventsPtr(midiEvents);
+    for (uint32_t curEventIndex = 0; curEventIndex &lt; midiEventCount; curEventIndex++ ) {
+            // discard an event if its size &amp;gt; 4
+            // if (midiEvents[curEventIndex].size &gt; MidiEvent::kDataSize)
+            //     continue;
+
+            // update the pointer into the range of midi events valid for the current csound ksmps
+            // the start of this range will be updated by the midi read callback
+            cs-&gt;SetMidiIndexEnd(  curEventIndex + 1 );
+            // copy the audio frames up to the current midi event
+            cs-&gt;CopyBuffers(samplesMin, midiEvents[curEventIndex].frame, inputs, outputs);
+            samplesMin = midiEvents[curEventIndex].frame;
+    }
+    </xsl:text>
+    </xsl:if>    
+    // copy the frames not copied while looping over midi events
+    cs-&gt;CopyBuffers(samplesMin, frames, inputs, outputs);
+}
+
+void Plugincsoundlv2::run0(
+        const float** inputs,
+        float** outputs,
+        uint32_t frames
+        <xsl:if test="(/plugin/distrho/midiinput > 0) or (/plugin/distrho/midioutput > 0)">
             <xsl:text>,const MidiEvent* midiEvents,
             uint32_t midiEventCount</xsl:text>
         </xsl:if>
@@ -200,7 +235,10 @@ void Plugincsoundlv2::run(
 
     <xsl:if test="/plugin/distrho/midiinput != 0">
     <xsl:text>
+    cs-&gt;SetMidiUserData(midiEvents, midiEventCount);
+    
     uint8_t note, velo;
+
     for (uint32_t count, pos=0, curEventIndex=0; pos&lt;frames;) {
 
         for (;curEventIndex &lt; midiEventCount &amp;&amp; pos &gt;= midiEvents[curEventIndex].frame; ++curEventIndex) {
@@ -226,16 +264,16 @@ void Plugincsoundlv2::run(
                             if (noteState[note]) {
                                 noteState[note] = false;
                                 float inum = -1 *(1 + (float)note/1000.0f);
-                                const MYFLT send[5] = {inum, 0, -1, 0, float(note)};
-                                cs-&gt;ScoreEvent(&apos;i&apos;, send, 5);
+                                const MYFLT send[6] = {inum, 0, -1, 0, float(note), 0};
+                                cs-&gt;ScoreEvent(&apos;i&apos;, send, 6);
                             }
                         }
                     }
                     else if (velo &gt; 0) {
                         noteState[note] = true;
                         float inum = 1 + (float)note/1000.0f;
-                        const MYFLT send[5] = {inum, 0, -1, float(velo), float(note) } ;
-                        cs-&gt;ScoreEvent(&apos;i&apos;, send, 5);
+                        const MYFLT send[6] = {inum, 0, -1, float(velo), float(note), float(velo) } ;
+                        cs-&gt;ScoreEvent(&apos;i&apos;, send, 6);
                         break;
                     }
                     break;
@@ -247,10 +285,11 @@ void Plugincsoundlv2::run(
                         noteState[note] = false;
                         // each note should have a unique number of the form x.xxx
                         float inum = -1 * (1 + (float)note/1000.0f);
-                        const MYFLT send[5] = {inum, 0, -1, 0, float(note)};
-                        cs-&gt;ScoreEvent(&apos;i&apos;, send, 5);
+                        const MYFLT send[6] = {inum, 0, -1, 0, float(note), 0};
+                        cs-&gt;ScoreEvent(&apos;i&apos;, send, 6);
                     }
                     break;
+
             }
         }
 

@@ -1,8 +1,45 @@
 #include "CsoundSession.hpp"
+#include <string.h>
 
 START_NAMESPACE_DISTRHO
 
+CsoundSession::MidiUserData CsoundSession::g_midiUserData;
 
+int CsoundSession::MidiInDeviceOpen(CSOUND *csound, void **userData, const char *dev) {
+    g_midiUserData.midiBuffer = csoundCreateCircularBuffer(csound, 4096, sizeof(unsigned char));
+    g_midiUserData.virtualMidiBuffer = csoundCreateCircularBuffer(csound,4096, sizeof(unsigned char));
+
+    *userData = (void *) &g_midiUserData;
+    printf("MidiInDeviceOpen called with %s\n", dev);
+    return CSOUND_SUCCESS;
+}
+
+int CsoundSession::MidiDataRead(CSOUND *csound, void *userData, unsigned char *mbuf, int nbytes) {
+    MidiUserData* const ud = static_cast<MidiUserData*>(userData);
+
+    for (uint32_t eventc = ud->start; eventc < ud->end; eventc++) {
+        // copy one event
+        ud->start++;
+
+        const MidiEvent evt = ud->events[eventc];
+
+        // if we've run out of space in mbuf
+        if (evt.size > nbytes) continue;
+
+        memcpy(mbuf , evt.data, evt.size * sizeof(unsigned char) );
+        return evt.size;
+    }
+        
+    return 0;
+}
+
+int CsoundSession::MidiInDeviceClose(CSOUND *csound, void *userData) {
+    return 0;
+}
+
+const char* CsoundSession::MidiErrorString( int e) {
+    return "midi error\n";
+}
 
 void noMessageCallback(CSOUND*, int, const char *format, va_list valist)
 {
@@ -10,6 +47,10 @@ void noMessageCallback(CSOUND*, int, const char *format, va_list valist)
   // leaving a clean console for our app
 	vprintf(format, valist);
   return;
+}
+
+CsoundSession::~CsoundSession() {
+    delete buffers;
 }
 
 CsoundSession::CsoundSession(const char* orc, double framerate, uint32_t buffersize) : Csound() {
@@ -24,13 +65,21 @@ CsoundSession::CsoundSession(const char* orc, double framerate, uint32_t buffers
     m_csParams.nchnls_i_override = DISTRHO_PLUGIN_NUM_INPUTS;
     m_csParams.debug_mode = 0;
     m_csParams.realtime_mode = 1;
-
+    m_csParams.number_of_threads = CSOUND_NUM_THREADS;
 
     // Note that setParams is called before first compilation
     SetParams(&m_csParams);
     SetOption("-n");
     SetOption("-d");
+    SetOption("-+rtmidi=hostbased");
+    SetOption("-Ma");
+    SetExternalMidiInOpenCallback(MidiInDeviceOpen);
+    SetExternalMidiReadCallback(MidiDataRead);
+    SetExternalMidiInCloseCallback(MidiInDeviceClose);
+    SetExternalMidiErrorStringCallback(MidiErrorString);
+    SetHostImplementedMIDIIO(1);
     if (CompileOrc(m_orc) == 0) {
+
         Start();
     }
     else {
@@ -41,6 +90,7 @@ CsoundSession::CsoundSession(const char* orc, double framerate, uint32_t buffers
     m_result =  0;
 
     buffers = new AudioBuffers(Get0dBFS(), GetKsmps(), GetSpin(), GetSpout(), GetCsound());
+
 };
 // -----------------------------------------------------------------------
 // CopyBuffers

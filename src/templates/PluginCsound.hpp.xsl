@@ -123,6 +123,16 @@ protected:
 
     void activate() override;
 
+    void run0(
+        const float**,
+        float** outputs,
+        uint32_t frames
+        <xsl:if test="(/plugin/distrho/midiinput &gt; 0) or (/plugin/distrho/midioutput &gt; 0)">
+            <xsl:text>,const MidiEvent* midiEvents,
+            uint32_t midiEventCount</xsl:text>
+        </xsl:if>
+    );
+
     void run(
         const float**,
         float** outputs,
@@ -132,7 +142,6 @@ protected:
             uint32_t midiEventCount</xsl:text>
         </xsl:if>
     ) override;
-
 
     // -------------------------------------------------------------------
 

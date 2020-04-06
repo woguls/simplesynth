@@ -41,6 +41,8 @@
 #define DISTRHO_PLUGIN_WANT_MIDI_INPUT <xsl:value-of select="/plugin/distrho/midiinput"/>
 #define DISTRHO_PLUGIN_WANT_MIDI_OUTPUT <xsl:value-of select="/plugin/distrho/midioutput"/>
 
+#define CSOUND_NUM_THREADS <xsl:if test="/plugin/csound/params/number_of_threads"> <xsl:value-of select="/plugin/csound/params/number_of_threads" /> </xsl:if> <xsl:if test="not(/plugin/csound/params/number_of_threads)"> <xsl:text>1</xsl:text> </xsl:if>
+
 #endif // DISTRHO_PLUGIN_INFO_H
 
 
