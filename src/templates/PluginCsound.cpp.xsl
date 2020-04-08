@@ -179,7 +179,13 @@ void Plugincsoundlv2::run(
             uint32_t midiEventCount</xsl:text>
         </xsl:if>
 ) {
-
+    
+    for(int p=0; p&lt;paramCount; p++) {
+        if (paramShouldSend[p]) {
+            cs-&gt;SetChannel( params[p]-&gt;symbol.buffer(), fParams[p]);
+            paramShouldSend[p] = false;
+        }
+    }
     // 
     uint32_t samplesMin = 0;
 
@@ -190,14 +196,7 @@ void Plugincsoundlv2::run(
     cs-&gt;SetMidiIndexEnd(0);
     cs-&gt;SetMidiEventsPtr(midiEvents);
     for (uint32_t curEventIndex = 0; curEventIndex &lt; midiEventCount; curEventIndex++ ) {
-            // discard an event if its size &amp;gt; 4
-            // if (midiEvents[curEventIndex].size &gt; MidiEvent::kDataSize)
-            //     continue;
-
-            // update the pointer into the range of midi events valid for the current csound ksmps
-            // the start of this range will be updated by the midi read callback
             cs-&gt;SetMidiIndexEnd(  curEventIndex + 1 );
-            // copy the audio frames up to the current midi event
             cs-&gt;CopyBuffers(samplesMin, midiEvents[curEventIndex].frame, inputs, outputs);
             samplesMin = midiEvents[curEventIndex].frame;
     }

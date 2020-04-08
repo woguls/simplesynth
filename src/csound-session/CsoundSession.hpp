@@ -11,7 +11,7 @@ class AudioBuffers
 {
 public:
     AudioBuffers(const MYFLT zdbfs, const uint32_t ksmps, MYFLT* spin, MYFLT* spout, CSOUND * const csound);
-    void Copy(const uint32_t low, const uint32_t high, const float** const in, float** const out);
+    int Copy(const uint32_t low, const uint32_t high, const float** const in, float** const out);
 private:
     const MYFLT m_0dBFS;
     MYFLT * const m_spin;
@@ -41,8 +41,6 @@ public:
         uint32_t end = 0;
         uint32_t eventCount = 0;
         const MidiEvent* events;
-        void *midiBuffer; //Csound Circular Buffer
-        void *virtualMidiBuffer; //Csound Circular Buffer
     };
 
     void SetMidiUserData(const MidiEvent* midiEvents, const uint32_t midiEventCount) {

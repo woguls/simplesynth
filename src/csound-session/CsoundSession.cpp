@@ -6,17 +6,20 @@ START_NAMESPACE_DISTRHO
 CsoundSession::MidiUserData CsoundSession::g_midiUserData;
 
 int CsoundSession::MidiInDeviceOpen(CSOUND *csound, void **userData, const char *dev) {
-    g_midiUserData.midiBuffer = csoundCreateCircularBuffer(csound, 4096, sizeof(unsigned char));
-    g_midiUserData.virtualMidiBuffer = csoundCreateCircularBuffer(csound,4096, sizeof(unsigned char));
 
     *userData = (void *) &g_midiUserData;
-    printf("MidiInDeviceOpen called with %s\n", dev);
+    //printf("MidiInDeviceOpen called with %s\n", dev);
     return CSOUND_SUCCESS;
 }
 
+
+// copy one midi event to mbuf from dhistro buffer, return the length of the event, or return 0 if there are no more events in the distrho buffer
+// apparently durring performKsmps() csound will call this until it returns 0
 int CsoundSession::MidiDataRead(CSOUND *csound, void *userData, unsigned char *mbuf, int nbytes) {
     MidiUserData* const ud = static_cast<MidiUserData*>(userData);
 
+    if (ud->start < ud->end) {
+    }
     for (uint32_t eventc = ud->start; eventc < ud->end; eventc++) {
         // copy one event
         ud->start++;
@@ -25,16 +28,15 @@ int CsoundSession::MidiDataRead(CSOUND *csound, void *userData, unsigned char *m
 
         // if we've run out of space in mbuf
         if (evt.size > nbytes) continue;
-
+        //printf("midi: size %i, status %x, channel %x, data1 %x, data2 %x\n", evt.size, evt.data[0] & 0xF0, evt.data[0] & 0x0F, evt.data[1], evt.data[2]);
         memcpy(mbuf , evt.data, evt.size * sizeof(unsigned char) );
         return evt.size;
     }
-        
-    return 0;
+    return CSOUND_SUCCESS;
 }
 
 int CsoundSession::MidiInDeviceClose(CSOUND *csound, void *userData) {
-    return 0;
+    return CSOUND_SUCCESS;
 }
 
 const char* CsoundSession::MidiErrorString( int e) {
@@ -45,7 +47,7 @@ void noMessageCallback(CSOUND*, int, const char *format, va_list valist)
 {
   // Do nothing so that Csound will not print any message,
   // leaving a clean console for our app
-	vprintf(format, valist);
+  vprintf(format, valist);
   return;
 }
 
@@ -72,32 +74,23 @@ CsoundSession::CsoundSession(const char* orc, double framerate, uint32_t buffers
     SetOption("-n");
     SetOption("-d");
     SetOption("-+rtmidi=hostbased");
-    SetOption("-Ma");
+    SetOption("-M0");
     SetExternalMidiInOpenCallback(MidiInDeviceOpen);
     SetExternalMidiReadCallback(MidiDataRead);
     SetExternalMidiInCloseCallback(MidiInDeviceClose);
     SetExternalMidiErrorStringCallback(MidiErrorString);
     SetHostImplementedMIDIIO(1);
-    if (CompileOrc(m_orc) == 0) {
-
+    m_result = CompileOrc(m_orc);
+    if ( m_result == CSOUND_SUCCESS) {
         Start();
+        buffers = new AudioBuffers(Get0dBFS(), GetKsmps(), GetSpin(), GetSpout(), GetCsound());
     }
-    else {
-      m_result = 1;
-      return;
-    }
-    
-    m_result =  0;
-
-    buffers = new AudioBuffers(Get0dBFS(), GetKsmps(), GetSpin(), GetSpout(), GetCsound());
-
 };
 // -----------------------------------------------------------------------
 // CopyBuffers
 // low, high: sample numbers relative to the Distrho buffers.
 void CsoundSession::CopyBuffers(const uint32_t low, const uint32_t high, const float** in, float** out) {
-
-	buffers->Copy(low, high, in, out);
+    if (m_result == CSOUND_SUCCESS) m_result = buffers->Copy(low, high, in, out);
 }
 
 AudioBuffers::AudioBuffers(const MYFLT zdbfs, const uint32_t ksmps, MYFLT* spin, MYFLT* spout, CSOUND * const csound) :
@@ -109,10 +102,11 @@ AudioBuffers::AudioBuffers(const MYFLT zdbfs, const uint32_t ksmps, MYFLT* spin,
         m_csound{csound}
         {}
 
-void AudioBuffers::Copy(const uint32_t low, const uint32_t high, const float** const in, float** const out) {
+int AudioBuffers::Copy(const uint32_t low, const uint32_t high, const float** const in, float** const out) {
+    int result = CSOUND_SUCCESS;
 	for (uint32_t frame = low; frame < high; frame++, m_processedFrames++) {
 		if (m_processedFrames == m_ksmps ) {
-			csoundPerformKsmps(m_csound);
+			result = csoundPerformKsmps(m_csound);
 			m_processedFrames = 0;
 		}
 
@@ -126,7 +120,7 @@ void AudioBuffers::Copy(const uint32_t low, const uint32_t high, const float** c
 	        m_spin[j + offset] = in[j][frame] * m_0dBFS;
 		}
 	}
-
+    return result;
 }
 
 END_NAMESPACE_DISTRHO
